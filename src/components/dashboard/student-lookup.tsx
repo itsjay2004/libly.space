@@ -19,7 +19,7 @@ export default function StudentLookup() {
         <CardDescription>Search for a student to quickly view their profile.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Command>
+        <Command shouldFilter={true} className="w-full">
           <CommandInput placeholder="Search by name or phone..." />
           <CommandList>
             <CommandEmpty>No student found.</CommandEmpty>
