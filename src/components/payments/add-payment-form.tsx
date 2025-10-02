@@ -43,6 +43,7 @@ export default function AddPaymentForm() {
   const form = useForm<z.infer<typeof paymentFormSchema>>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
+      amount: 0,
       date: new Date(),
       months: [],
     },
@@ -57,7 +58,7 @@ export default function AddPaymentForm() {
       title: 'Payment Recorded',
       description: `Payment of ₹${values.amount} for ${student?.name} for ${values.months.join(', ')} has been recorded.`,
     });
-    form.reset({ date: new Date(), months: [] });
+    form.reset({ amount: 0, date: new Date(), months: [] });
   };
 
   return (
@@ -206,7 +207,7 @@ export default function AddPaymentForm() {
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Enter amount" {...field} />
+                    <Input type="number" placeholder="Enter amount" {...field} onChange={event => field.onChange(+event.target.value)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
