@@ -18,8 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { shifts } from "@/lib/data";
 import type { Student } from "@/lib/types";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, Eye } from "lucide-react";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, Eye, UserCheck, UserX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 
 export default function StudentActions({ student }: { student?: Student }) {
   const [open, setOpen] = useState(false);
@@ -37,6 +38,17 @@ export default function StudentActions({ student }: { student?: Student }) {
     });
     setOpen(false);
   };
+  
+  const handleStatusChange = () => {
+    if (!student) return;
+    const newStatus = student.status === 'active' ? 'inactive' : 'active';
+    // This is mock logic. In a real app, you'd update the database.
+    console.log(`Changed ${student.name}'s status to ${newStatus}`);
+    toast({
+        title: "Status Updated",
+        description: `${student.name} is now ${newStatus}.`,
+    });
+  }
 
   const formContent = (
     <form onSubmit={handleSubmit}>
@@ -102,6 +114,10 @@ export default function StudentActions({ student }: { student?: Student }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleStatusChange}>
+                    {student.status === 'active' ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                    <span>{student.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}</span>
                 </DropdownMenuItem>
                  <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Action not implemented", description: "Delete functionality is a work in progress."})}>
