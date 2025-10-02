@@ -48,7 +48,11 @@ export default function DashboardPage() {
           description={`Out of ${librarySettings.totalSeats} total seats`}
         />
       </div>
-      
+
+      <div className="grid gap-8">
+         <StudentLookup />
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
             <DueReminders />
@@ -57,11 +61,6 @@ export default function DashboardPage() {
           <CollectionChart data={monthlyCollection} />
         </div>
       </div>
-
-      <div className="grid gap-8">
-         <StudentLookup />
-      </div>
-
     </div>
   );
 }
