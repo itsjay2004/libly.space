@@ -26,9 +26,11 @@ export default function SeatManagementPage() {
   const { toast } = useToast();
 
   const getStudentForSeat = (seatNumber: number) => {
+    const fullDayShiftId = shifts.find(s => s.name === 'Full Day')?.id;
     return students.find(
       (student) =>
-        student.seatNumber === seatNumber && student.shiftId === selectedShift
+        student.seatNumber === seatNumber &&
+        (student.shiftId === selectedShift || student.shiftId === fullDayShiftId)
     );
   };
   
