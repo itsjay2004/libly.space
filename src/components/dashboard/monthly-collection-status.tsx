@@ -7,15 +7,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { ChartContainer } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { students, payments, shifts } from "@/lib/data"
 import { format, getMonth, getYear } from "date-fns"
 import {
   PolarGrid,
   RadialBar,
   RadialBarChart,
-  Tooltip,
-  TooltipContent,
 } from "recharts"
 
 export default function MonthlyCollectionStatus() {
@@ -70,9 +68,9 @@ export default function MonthlyCollectionStatus() {
               polarRadius={[80, 60]}
             />
             <RadialBar dataKey="value" background cornerRadius={10} />
-            <Tooltip
+            <ChartTooltip
               content={
-                <TooltipContent
+                <ChartTooltipContent
                   formatter={(value) => `₹${collectedAmount.toLocaleString()}`}
                   label=" "
                 />
