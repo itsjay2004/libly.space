@@ -18,11 +18,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
 
   return (
     <div className="flex flex-col gap-6">
-       <div className="flex items-center justify-between">
-        <div>
-            <h1 className="text-3xl font-bold tracking-tight">Student Profile</h1>
-            <p className="text-muted-foreground">Detailed information about the student.</p>
-        </div>
+       <div className="flex items-center justify-end">
         <StudentActions student={student} />
       </div>
 

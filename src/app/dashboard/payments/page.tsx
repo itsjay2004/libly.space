@@ -13,11 +13,6 @@ export default function PaymentsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Payment Management</h1>
-        <p className="text-muted-foreground">Record new payments and view transaction history.</p>
-      </div>
-      
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
             <AddPaymentForm />

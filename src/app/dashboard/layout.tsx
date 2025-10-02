@@ -20,7 +20,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Armchair, CreditCard, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, Armchair, CreditCard, Bell } from 'lucide-react';
 import Logo from "@/components/logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const menuItems = [
-    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard /> },
-    { href: "/dashboard/students", label: "Students", icon: <Users /> },
-    { href: "/dashboard/seats", label: "Seats", icon: <Armchair /> },
-    { href: "/dashboard/payments", label: "Payments", icon: <CreditCard /> },
-    { href: "/dashboard/settings", label: "Settings", icon: <Settings /> },
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard />, title: "Dashboard", description: "An overview of your library's status." },
+    { href: "/dashboard/students", label: "Students", icon: <Users />, title: "Student Management", description: "Add, view, and manage student profiles." },
+    { href: "/dashboard/seats", label: "Seats", icon: <Armchair />, title: "Seat Management", description: "Visually manage seat assignments for each shift." },
+    { href: "/dashboard/payments", label: "Payments", icon: <CreditCard />, title: "Payment Management", description: "Record new payments and view transaction history." },
+    { href: "/dashboard/settings", label: "Settings", icon: <Settings />, title: "Library Settings", description: "Configure your library's capacity and shifts." },
   ];
+
+  let currentPage = menuItems.find((item) => pathname === item.href);
+
+  if (pathname.startsWith('/dashboard/students/') && pathname !== '/dashboard/students') {
+      currentPage = { href: pathname, label: "Student Profile", icon: <Users />, title: "Student Profile", description: "Detailed information about the student."}
+  }
+
 
   return (
     <SidebarProvider>
@@ -68,11 +75,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <header className="flex items-center justify-between h-20 px-4 border-b sm:px-8">
-          <div className="md:hidden">
-            <SidebarTrigger />
-          </div>
-           <div className="flex items-center gap-4">
-            {/* Can add breadcrumbs or page title here */}
+          <div className="flex items-center gap-4">
+             <div className="md:hidden">
+                <SidebarTrigger />
+            </div>
+            <div>
+              {currentPage && (
+                <>
+                  <h1 className="text-xl font-bold tracking-tight">{currentPage.title}</h1>
+                  <p className="text-sm text-muted-foreground">{currentPage.description}</p>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon">

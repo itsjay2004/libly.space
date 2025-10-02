@@ -142,12 +142,6 @@ export default function SeatManagementPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Seat Management</h1>
-          <p className="text-muted-foreground">
-            Visually manage seat assignments for each shift.
-          </p>
-        </div>
         <Select value={selectedShift} onValueChange={setSelectedShift}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Select a shift" />
