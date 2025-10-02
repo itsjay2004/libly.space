@@ -23,7 +23,7 @@ export default function SettingsPage() {
   };
   
   const addShift = () => {
-    setShifts([...shifts, { id: `shift-${Date.now()}`, name: '', startTime: '', endTime: '', capacity: 0, fee: 0 }]);
+    setShifts([...shifts, { id: `shift-${Math.random().toString(36).substr(2, 9)}`, name: '', startTime: '', endTime: '', capacity: 0, fee: 0 }]);
   };
 
   const removeShift = (index: number) => {
