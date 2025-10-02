@@ -42,7 +42,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-3">
              <Logo />
-             <h1 className="text-xl font-semibold font-headline text-foreground">Library Admin</h1>
+             <h1 className="text-xl font-semibold font-headline text-foreground">libly.space</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
