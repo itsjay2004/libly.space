@@ -104,31 +104,43 @@ export const students: Student[] = [
 ];
 
 export const payments: Payment[] = [
-    { id: 'pay-1', studentId: 'student-1', amount: 1500, date: '2024-07-01', month: 'July' },
-    { id: 'pay-2', studentId: 'student-2', amount: 1000, date: '2024-06-05', month: 'June' },
-    { id: 'pay-3', studentId: 'student-3', amount: 1500, date: '2024-07-02', month: 'July' },
-    { id: 'pay-4', studentId: 'student-5', amount: 2000, date: '2024-07-04', month: 'July' },
-    { id: 'pay-5', studentId: 'student-6', amount: 1500, date: '2024-07-03', month: 'July' },
-    { id: 'pay-6', studentId: 'student-1', amount: 1500, date: '2024-06-01', month: 'June' },
-    { id: 'pay-7', studentId: 'student-3', amount: 1500, date: '2024-06-02', month: 'June' },
-    { id: 'pay-8', studentId: 'student-5', amount: 2000, date: '2024-06-04', month: 'June' },
-    { id: 'pay-9', studentId: 'student-6', amount: 1500, date: '2024-06-03', month: 'June' },
+    { id: 'pay-1', studentId: 'student-1', amount: 1500, date: '2024-07-01', month: 'July', year: 2024 },
+    { id: 'pay-2', studentId: 'student-2', amount: 1000, date: '2024-06-05', month: 'June', year: 2024 },
+    { id: 'pay-3', studentId: 'student-3', amount: 1500, date: '2024-07-02', month: 'July', year: 2024 },
+    { id: 'pay-4', studentId: 'student-5', amount: 2000, date: '2024-07-04', month: 'July', year: 2024 },
+    { id: 'pay-5', studentId: 'student-6', amount: 1500, date: '2024-07-03', month: 'July', year: 2024 },
+    { id: 'pay-6', studentId: 'student-1', amount: 1500, date: '2024-06-01', month: 'June', year: 2024 },
+    { id: 'pay-7', studentId: 'student-3', amount: 1500, date: '2024-06-02', month: 'June', year: 2024 },
+    { id: 'pay-8', studentId: 'student-5', amount: 2000, date: '2024-06-04', month: 'June', year: 2024 },
+    { id: 'pay-9', studentId: 'student-6', amount: 1500, date: '2024-06-03', month: 'June', year: 2024 },
 ];
 
 export const getMonthlyCollection = () => {
     const monthlyData: { [key: string]: number } = {};
     payments.forEach(payment => {
-        if (monthlyData[payment.month]) {
-            monthlyData[payment.month] += payment.amount;
+        const monthYear = `${payment.month} ${payment.year}`;
+        if (monthlyData[monthYear]) {
+            monthlyData[monthYear] += payment.amount;
         } else {
-            monthlyData[payment.month] = payment.amount;
+            monthlyData[monthYear] = payment.amount;
         }
     });
 
     const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const currentYear = new Date().getFullYear();
     
-    return monthOrder.map(month => ({
-        month,
-        total: monthlyData[month] || 0,
-    })).filter(d => d.total > 0);
+    // Create a representation for the last 12 months for the chart
+    const labels = Array.from({ length: 12 }).map((_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return `${monthOrder[d.getMonth()]} ${d.getFullYear()}`;
+    }).reverse();
+
+    return labels.map(label => {
+        const [month] = label.split(" ");
+        return {
+            month: month.substring(0, 3),
+            total: monthlyData[label] || 0,
+        }
+    });
 };

@@ -34,5 +34,6 @@ export interface Payment {
   studentId: string;
   amount: number;
   date: string;
-  month: string | string[];
+  month: string | string[]; // This will store ["July 2024", "August 2024"]
+  year: number;
 }

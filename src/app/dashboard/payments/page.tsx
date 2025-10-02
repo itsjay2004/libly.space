@@ -33,6 +33,7 @@ export default function PaymentsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Student</TableHead>
+                    <TableHead>Month(s)</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
@@ -41,12 +42,13 @@ export default function PaymentsPage() {
                   {recentPayments.length > 0 ? recentPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{getStudentName(payment.studentId)}</TableCell>
+                      <TableCell>{Array.isArray(payment.month) ? payment.month.join(', ') : payment.month}</TableCell>
                       <TableCell>{format(new Date(payment.date), "PPP")}</TableCell>
                       <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center">No recent payments.</TableCell>
+                      <TableCell colSpan={4} className="h-24 text-center">No recent payments.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

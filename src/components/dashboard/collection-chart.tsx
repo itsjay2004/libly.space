@@ -6,7 +6,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
 } from "@/components/ui/card"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 
