@@ -38,7 +38,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                   <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <h2 className="text-2xl font-semibold">{student.name}</h2>
-                <p className="text-muted-foreground">{student.email}</p>
+                <p className="text-muted-foreground">{student.phone}</p>
                 <div className="mt-4 flex items-center gap-2">
                     <Badge variant={student.status === "active" ? "default" : "secondary"}>
                     {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
@@ -52,7 +52,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
               <CardTitle>Contact & Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p><strong>Phone:</strong> {student.phone}</p>
+              <p><strong>Email:</strong> {student.email}</p>
               <p><strong>Joined:</strong> {format(new Date(student.joinDate), "MMMM d, yyyy")}</p>
               <p><strong>Student ID:</strong> {student.studentId}</p>
             </CardContent>
