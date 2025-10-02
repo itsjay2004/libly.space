@@ -117,19 +117,31 @@ export const payments: Payment[] = [
 
 export const getMonthlyCollection = () => {
     const monthlyData: { [key: string]: number } = {};
+    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
     payments.forEach(payment => {
-        const monthYear = `${payment.month} ${payment.year}`;
-        if (monthlyData[monthYear]) {
-            monthlyData[monthYear] += payment.amount;
-        } else {
-            monthlyData[monthYear] = payment.amount;
-        }
+        // Handle both string and array for month
+        const paymentMonths = Array.isArray(payment.month) ? payment.month : [payment.month];
+        const monthsInYear = paymentMonths.length;
+        const amountPerMonth = monthsInYear > 0 ? payment.amount / monthsInYear : 0;
+
+        paymentMonths.forEach(monthStr => {
+            const year = payment.year;
+            // The month can be just the month name.
+            const monthName = monthStr.split(' ')[0];
+            const monthIndex = monthOrder.indexOf(monthName);
+            
+            if (monthIndex !== -1) {
+                const key = `${monthOrder[monthIndex]} ${year}`;
+                if (monthlyData[key]) {
+                    monthlyData[key] += amountPerMonth;
+                } else {
+                    monthlyData[key] = amountPerMonth;
+                }
+            }
+        });
     });
 
-    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const currentYear = new Date().getFullYear();
-    
-    // Create a representation for the last 12 months for the chart
     const labels = Array.from({ length: 12 }).map((_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
