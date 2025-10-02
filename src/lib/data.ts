@@ -1,9 +1,10 @@
 import type { Student, LibrarySettings, Payment } from './types';
 
 export const shifts = [
-  { id: 'shift-1', name: 'Morning Shift', startTime: '08:00 AM', endTime: '02:00 PM', capacity: 50 },
-  { id: 'shift-2', name: 'Evening Shift', startTime: '03:00 PM', endTime: '09:00 PM', capacity: 50 },
-  { id: 'shift-3', name: 'Night Shift', startTime: '10:00 PM', endTime: '06:00 AM', capacity: 25 },
+  { id: 'shift-1', name: 'Morning Shift', startTime: '08:00', endTime: '14:00', capacity: 50 },
+  { id: 'shift-2', name: 'Evening Shift', startTime: '15:00', endTime: '21:00', capacity: 50 },
+  { id: 'shift-3', name: 'Night Shift', startTime: '22:00', endTime: '06:00', capacity: 25 },
+  { id: 'shift-4', name: 'Full Day', startTime: '08:00', endTime: '21:00', capacity: 125 },
 ];
 
 export const librarySettings: LibrarySettings = {
