@@ -2,7 +2,8 @@ import { students, librarySettings, getMonthlyCollection } from '@/lib/data';
 import StatsCard from '@/components/dashboard/stats-card';
 import CollectionChart from '@/components/dashboard/collection-chart';
 import DueReminders from '@/components/dashboard/due-reminders';
-import { Users, UserX, PiggyBank, CircleDollarSign, BarChartBig } from 'lucide-react';
+import { Users, UserX, PiggyBank, CircleDollarSign } from 'lucide-react';
+import StudentLookup from '@/components/dashboard/student-lookup';
 
 export default function DashboardPage() {
   const activeStudents = students.filter(s => s.status === 'active').length;
@@ -47,15 +48,20 @@ export default function DashboardPage() {
           description={`Out of ${librarySettings.totalSeats} total seats`}
         />
       </div>
-
+      
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-            <CollectionChart data={monthlyCollection} />
+            <StudentLookup />
         </div>
         <div className="lg:col-span-1">
             <DueReminders />
         </div>
       </div>
+
+      <div className="grid gap-8">
+          <CollectionChart data={monthlyCollection} />
+      </div>
+
     </div>
   );
 }
