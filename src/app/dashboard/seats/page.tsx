@@ -27,16 +27,25 @@ export default function SeatManagementPage() {
 
   const getStudentForSeat = (seatNumber: number) => {
     const fullDayShiftId = shifts.find(s => s.name === 'Full Day')?.id;
-    return students.find(
-      (student) =>
-        student.seatNumber === seatNumber &&
-        (student.shiftId === selectedShift || student.shiftId === fullDayShiftId)
-    );
+    const selectedShiftDetails = shifts.find(s => s.id === selectedShift);
+
+    return students.find((student) => {
+      if (student.seatNumber !== seatNumber) return false;
+
+      // A full-day student occupies the seat for all shifts.
+      if (student.shiftId === fullDayShiftId) return true;
+      
+      // If the selected shift is 'Full Day', show all occupied seats.
+      if (selectedShiftDetails?.name === 'Full Day') return true;
+
+      // Otherwise, check if the student's shift matches the selected one.
+      return student.shiftId === selectedShift;
+    });
   };
   
   const studentForSelectedSeat = selectedSeat ? getStudentForSeat(selectedSeat) : null;
 
-  const totalSeats = librarySettings.shifts.find(shift => shift.id === selectedShift)?.capacity ?? 0;
+  const totalSeats = librarySettings.totalSeats;
 
   const handleSeatClick = (seatNumber: number) => {
     setSelectedSeat(seatNumber);
@@ -64,6 +73,20 @@ export default function SeatManagementPage() {
 
      const handleAssign = () => {
         if (!selectedStudentId || !selectedSeat) return;
+        
+        const isSeatOccupiedByFullDay = students.some(s => 
+            s.seatNumber === selectedSeat &&
+            s.shiftId === shifts.find(shift => shift.name === 'Full Day')?.id
+        );
+
+        if(isSeatOccupiedByFullDay){
+            toast({
+              variant: 'destructive',
+              title: "Seat Already Booked",
+              description: `Seat #${selectedSeat} is already booked for the full day.`,
+            });
+            return;
+        }
 
         setStudents(students.map(s => {
           if (s.id === selectedStudentId) {
