@@ -1,21 +1,20 @@
 "use client";
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { students } from '@/lib/data';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
@@ -42,7 +41,7 @@ export default function AddPaymentForm() {
       title: 'Payment Recorded',
       description: `Payment of ₹${values.amount} for ${student?.name} has been recorded.`,
     });
-    form.reset();
+    form.reset({ date: new Date() });
   };
 
   return (
@@ -58,22 +57,61 @@ export default function AddPaymentForm() {
               control={form.control}
               name="studentId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Student</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a student to pay for" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {students.map(student => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? students.find(
+                                (student) => student.id === field.value
+                              )?.name
+                            : "Select a student"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search student..." />
+                        <CommandList>
+                          <CommandEmpty>No student found.</CommandEmpty>
+                          <CommandGroup>
+                            {students.map((student) => (
+                              <CommandItem
+                                value={student.name}
+                                key={student.id}
+                                onSelect={() => {
+                                  form.setValue("studentId", student.id)
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    student.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <div>
+                                  <p>{student.name}</p>
+                                  <p className="text-xs text-muted-foreground">{student.phone}</p>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

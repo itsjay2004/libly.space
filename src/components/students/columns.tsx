@@ -4,22 +4,20 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { Student } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { shifts } from "@/lib/data"
 import StudentActions from "./student-actions"
-import Link from "next/link"
 
 export const columns: ColumnDef<Student>[] = [
   {
-    accessorKey: "studentId",
+    accessorKey: "phone",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Student ID
+          Phone Number
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )

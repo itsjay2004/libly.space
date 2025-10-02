@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { shifts, students as allStudents, librarySettings } from "@/lib/data";
-import { Armchair, X } from "lucide-react";
+import { Armchair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -92,7 +92,7 @@ export default function SeatManagementPage() {
           </DialogHeader>
           <div className="py-4">
               <p><strong>Student:</strong> {studentForSelectedSeat.name}</p>
-              <p><strong>Student ID:</strong> {studentForSelectedSeat.studentId}</p>
+              <p><strong>Phone:</strong> {studentForSelectedSeat.phone}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Close</Button>
@@ -118,7 +118,7 @@ export default function SeatManagementPage() {
             <SelectContent>
                 {unassignedStudents.length > 0 ? unassignedStudents.map(student => (
                     <SelectItem key={student.id} value={student.id}>
-                        {student.name} ({student.studentId})
+                        {student.name} ({student.phone})
                     </SelectItem>
                 )) : <p className="p-4 text-sm text-muted-foreground">No unassigned students in this shift.</p>}
             </SelectContent>

@@ -5,8 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
 import StudentActions from "@/components/students/student-actions";
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
@@ -54,7 +52,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
             <CardContent className="space-y-2 text-sm">
               <p><strong>Email:</strong> {student.email}</p>
               <p><strong>Joined:</strong> {format(new Date(student.joinDate), "MMMM d, yyyy")}</p>
-              <p><strong>Student ID:</strong> {student.studentId}</p>
+              <p><strong>Phone:</strong> {student.phone}</p>
             </CardContent>
           </Card>
         </div>

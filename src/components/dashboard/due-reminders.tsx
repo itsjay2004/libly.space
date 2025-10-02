@@ -30,7 +30,7 @@ export default function DueReminders() {
             studentsWithDues.map((student) => (
             <div key={student.id} className="flex items-center">
               <Avatar className="h-9 w-9">
-                 <AvatarImage src={`https://picsum.photos/seed/${student.studentId}/40/40`} alt={student.name} />
+                 <AvatarImage src={`https://picsum.photos/seed/${student.phone}/40/40`} alt={student.name} />
                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="ml-4 space-y-1">

@@ -16,7 +16,6 @@ export const students: Student[] = [
   {
     id: 'student-1',
     name: 'Aarav Sharma',
-    studentId: 'LS-001',
     email: 'aarav.sharma@example.com',
     phone: '9876543210',
     status: 'active',
@@ -28,7 +27,6 @@ export const students: Student[] = [
   {
     id: 'student-2',
     name: 'Diya Patel',
-    studentId: 'LS-002',
     email: 'diya.patel@example.com',
     phone: '9876543211',
     status: 'active',
@@ -40,7 +38,6 @@ export const students: Student[] = [
   {
     id: 'student-3',
     name: 'Rohan Gupta',
-    studentId: 'LS-003',
     email: 'rohan.gupta@example.com',
     phone: '9876543212',
     status: 'active',
@@ -52,7 +49,6 @@ export const students: Student[] = [
   {
     id: 'student-4',
     name: 'Priya Singh',
-    studentId: 'LS-004',
     email: 'priya.singh@example.com',
     phone: '9876543213',
     status: 'inactive',
@@ -64,7 +60,6 @@ export const students: Student[] = [
   {
     id: 'student-5',
     name: 'Advik Kumar',
-    studentId: 'LS-005',
     email: 'advik.kumar@example.com',
     phone: '9876543214',
     status: 'active',
@@ -76,7 +71,6 @@ export const students: Student[] = [
     {
     id: 'student-6',
     name: 'Isha Reddy',
-    studentId: 'LS-006',
     email: 'isha.reddy@example.com',
     phone: '9876543215',
     status: 'active',
@@ -88,7 +82,6 @@ export const students: Student[] = [
   {
     id: 'student-7',
     name: 'Kabir Das',
-    studentId: 'LS-007',
     email: 'kabir.das@example.com',
     phone: '9876543216',
     status: 'active',
@@ -100,7 +93,6 @@ export const students: Student[] = [
   {
     id: 'student-8',
     name: 'Sneha Reddy',
-    studentId: 'LS-008',
     email: 'sneha.reddy@example.com',
     phone: '9876543217',
     status: 'active',

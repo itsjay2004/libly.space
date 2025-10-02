@@ -1,7 +1,6 @@
 export interface Student {
   id: string;
   name: string;
-  studentId: string;
   email: string;
   phone: string;
   status: 'active' | 'inactive';
