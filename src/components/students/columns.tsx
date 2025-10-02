@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { shifts } from "@/lib/data"
 import StudentActions from "./student-actions"
+import Link from "next/link"
 
 export const columns: ColumnDef<Student>[] = [
   {
@@ -85,7 +86,9 @@ export const columns: ColumnDef<Student>[] = [
       const student = row.original
 
       return (
-        <StudentActions student={student} />
+        <div onClick={(e) => e.stopPropagation()}>
+          <StudentActions student={student} />
+        </div>
       )
     },
   },

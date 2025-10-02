@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -24,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import StudentActions from "./student-actions"
+import type { Student } from "@/lib/types";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -36,6 +38,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const router = useRouter();
 
   const table = useReactTable({
     data,
@@ -51,6 +54,11 @@ export function DataTable<TData, TValue>({
       columnFilters,
     },
   })
+
+  const handleRowClick = (row: any) => {
+    const student = row.original as Student;
+    router.push(`/dashboard/students/${student.id}`);
+  };
 
   return (
     <div>
@@ -91,6 +99,8 @@ export function DataTable<TData, TValue>({
                     <TableRow
                         key={row.id}
                         data-state={row.getIsSelected() && "selected"}
+                        onClick={() => handleRowClick(row)}
+                        className="cursor-pointer"
                     >
                         {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

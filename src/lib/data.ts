@@ -96,6 +96,18 @@ export const students: Student[] = [
     joinDate: '2023-07-18',
     feeDetails: { totalFee: 1500, paid: 0, due: 1500, lastPaymentDate: '2024-06-10' },
   },
+  {
+    id: 'student-8',
+    name: 'Sneha Reddy',
+    studentId: 'LS-008',
+    email: 'sneha.reddy@example.com',
+    phone: '9876543217',
+    status: 'active',
+    seatNumber: 5,
+    shiftId: 'shift-1',
+    joinDate: '2023-08-01',
+    feeDetails: { totalFee: 1500, paid: 1500, due: 0, lastPaymentDate: '2024-07-05' },
+  },
 ];
 
 export const payments: Payment[] = [

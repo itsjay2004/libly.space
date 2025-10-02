@@ -17,7 +17,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { LayoutDashboard, Users, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Armchair } from 'lucide-react';
 import Logo from "@/components/logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <SidebarMenuButton tooltip="Students">
                   <Users />
                   Student Management
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/dashboard/seats">
+                <SidebarMenuButton tooltip="Seats">
+                  <Armchair />
+                  Seat Management
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
