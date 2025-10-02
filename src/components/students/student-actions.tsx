@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { shifts } from "@/lib/data";
 import type { Student } from "@/lib/types";
-import { PlusCircle, Edit, Trash2, MoreHorizontal } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, Eye } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export default function StudentActions({ student }: { student?: Student }) {
   const [open, setOpen] = useState(false);
@@ -98,9 +99,15 @@ export default function StudentActions({ student }: { student?: Student }) {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/students/${student.id}`}>
+                        <Eye className="mr-2 h-4 w-4" /> View Details
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" /> Edit
                 </DropdownMenuItem>
+                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Action not implemented", description: "Delete functionality is a work in progress."})}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </DropdownMenuItem>
