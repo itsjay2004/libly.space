@@ -1,4 +1,4 @@
-import { students, payments } from "@/lib/data";
+import { students, payments, shifts } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   }
 
   const studentPayments = payments.filter((p) => p.studentId === student.id);
+  const shift = shifts.find((s) => s.id === student.shiftId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,8 +48,14 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p><strong>Email:</strong> {student.email}</p>
-              <p><strong>Joined:</strong> {format(new Date(student.joinDate), "MMMM d, yyyy")}</p>
               <p><strong>Phone:</strong> {student.phone}</p>
+              <p><strong>Joined:</strong> {format(new Date(student.joinDate), "MMMM d, yyyy")}</p>
+              {shift && <p><strong>Shift:</strong> {shift.name}</p>}
+              {student.seatNumber ? (
+                <p><strong>Seat:</strong> #{student.seatNumber}</p>
+              ) : (
+                <p><strong>Seat:</strong> <span className="text-muted-foreground">Not Assigned</span></p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -93,7 +100,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                     <TableBody>
                     {studentPayments.length > 0 ? studentPayments.map((payment) => (
                         <TableRow key={payment.id}>
-                        <TableCell>{payment.month}</TableCell>
+                        <TableCell>{Array.isArray(payment.month) ? payment.month.join(', ') : payment.month}</TableCell>
                         <TableCell>{format(new Date(payment.date), "PPP")}</TableCell>
                         <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                         </TableRow>

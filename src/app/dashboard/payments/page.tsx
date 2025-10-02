@@ -11,6 +11,13 @@ export default function PaymentsPage() {
     return students.find(s => s.id === studentId)?.name || 'Unknown Student';
   };
 
+  const formatMonths = (months: string | string[], year: number) => {
+    if (Array.isArray(months)) {
+      return months.map(m => `${m} ${year}`).join(', ');
+    }
+    return `${months} ${year}`;
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div className="grid lg:grid-cols-3 gap-8">
@@ -37,7 +44,7 @@ export default function PaymentsPage() {
                   {recentPayments.length > 0 ? recentPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{getStudentName(payment.studentId)}</TableCell>
-                      <TableCell>{Array.isArray(payment.month) ? payment.month.join(', ') : payment.month}</TableCell>
+                      <TableCell>{formatMonths(payment.month, payment.year)}</TableCell>
                       <TableCell>{format(new Date(payment.date), "PPP")}</TableCell>
                       <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                     </TableRow>
