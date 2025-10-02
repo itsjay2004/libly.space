@@ -13,6 +13,7 @@ export default function StudentLookup() {
 
   const handleSelect = (studentId: string) => {
     router.push(`/dashboard/students/${studentId}`);
+    setOpen(false);
   };
 
   return (
@@ -26,7 +27,7 @@ export default function StudentLookup() {
           <CommandInput 
             placeholder="Search by name or phone..." 
             onFocus={() => setOpen(true)}
-            onBlur={() => setOpen(false)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)} // Delay blur to allow onSelect to fire
             onValueChange={setValue}
           />
           {open && value.length > 0 && (
