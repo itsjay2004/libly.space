@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { students } from "@/lib/data";
 
 export default function StudentLookup() {
@@ -21,7 +21,6 @@ export default function StudentLookup() {
       <CardContent>
         <Command shouldFilter={true} className="w-full">
           <CommandInput placeholder="Search by name or phone..." />
-          <CommandList>
             <CommandEmpty>No student found.</CommandEmpty>
             <CommandGroup>
               {students.map((student) => (
@@ -41,7 +40,6 @@ export default function StudentLookup() {
                 </CommandItem>
               ))}
             </CommandGroup>
-          </CommandList>
         </Command>
       </CardContent>
     </Card>
