@@ -67,7 +67,7 @@ export default function StudentActions({ student }: { student?: Student }) {
             </SelectTrigger>
             <SelectContent>
               {shifts.map(shift => (
-                <SelectItem key={shift.id} value={shift.id}>{shift.name}</SelectItem>
+                <SelectItem key={shift.id} value={shift.id}>{shift.name} ({new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(shift.fee)})</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -75,10 +75,6 @@ export default function StudentActions({ student }: { student?: Student }) {
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="seatNumber" className="text-right">Seat No.</Label>
           <Input id="seatNumber" name="seatNumber" type="number" defaultValue={student?.seatNumber ?? ''} className="col-span-3" />
-        </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="totalFee" className="text-right">Fee Amount</Label>
-          <Input id="totalFee" name="totalFee" type="number" defaultValue={student?.feeDetails.totalFee} className="col-span-3" />
         </div>
       </div>
       <DialogFooter>

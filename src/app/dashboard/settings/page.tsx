@@ -23,7 +23,7 @@ export default function SettingsPage() {
   };
   
   const addShift = () => {
-    setShifts([...shifts, { id: `shift-${Date.now()}`, name: '', startTime: '', endTime: '', capacity: 0 }]);
+    setShifts([...shifts, { id: `shift-${Date.now()}`, name: '', startTime: '', endTime: '', capacity: 0, fee: 0 }]);
   };
 
   const removeShift = (index: number) => {
@@ -69,7 +69,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Shift Management</CardTitle>
-            <CardDescription>Define the shifts, timings, and capacity for each.</CardDescription>
+            <CardDescription>Define the shifts, timings, capacity and fee for each.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {shifts.map((shift, index) => (
@@ -77,7 +77,7 @@ export default function SettingsPage() {
                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeShift(index)}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`shift-name-${index}`}>Shift Name</Label>
                     <Input id={`shift-name-${index}`} value={shift.name} onChange={(e) => handleShiftChange(index, 'name', e.target.value)} />
@@ -85,6 +85,10 @@ export default function SettingsPage() {
                    <div className="grid gap-2">
                     <Label htmlFor={`capacity-${index}`}>Capacity</Label>
                     <Input id={`capacity-${index}`} type="number" value={shift.capacity} onChange={(e) => handleShiftChange(index, 'capacity', Number(e.target.value))} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor={`fee-${index}`}>Fee (₹)</Label>
+                    <Input id={`fee-${index}`} type="number" value={shift.fee} onChange={(e) => handleShiftChange(index, 'fee', Number(e.target.value))} />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">

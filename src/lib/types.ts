@@ -22,6 +22,7 @@ export interface Shift {
   startTime: string;
   endTime: string;
   capacity: number;
+  fee: number;
 }
 
 export interface LibrarySettings {

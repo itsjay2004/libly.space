@@ -1,10 +1,10 @@
-import type { Student, LibrarySettings, Payment } from './types';
+import type { Student, LibrarySettings, Payment, Shift } from './types';
 
-export const shifts = [
-  { id: 'shift-1', name: 'Morning Shift', startTime: '08:00', endTime: '14:00', capacity: 50 },
-  { id: 'shift-2', name: 'Evening Shift', startTime: '15:00', endTime: '21:00', capacity: 50 },
-  { id: 'shift-3', name: 'Night Shift', startTime: '22:00', endTime: '06:00', capacity: 25 },
-  { id: 'shift-4', name: 'Full Day', startTime: '08:00', endTime: '21:00', capacity: 125 },
+export const shifts: Shift[] = [
+  { id: 'shift-1', name: 'Morning Shift', startTime: '08:00', endTime: '14:00', capacity: 50, fee: 1500 },
+  { id: 'shift-2', name: 'Evening Shift', startTime: '15:00', endTime: '21:00', capacity: 50, fee: 1500 },
+  { id: 'shift-3', name: 'Night Shift', startTime: '22:00', endTime: '06:00', capacity: 25, fee: 2000 },
+  { id: 'shift-4', name: 'Full Day', startTime: '08:00', endTime: '21:00', capacity: 125, fee: 2500 },
 ];
 
 export const librarySettings: LibrarySettings = {
