@@ -169,7 +169,7 @@ export default function SeatManagementPage() {
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-4">
             {Array.from({ length: totalSeats }, (_, i) => i + 1).map(
               (seatNumber) => {
                 const student = getStudentForSeat(seatNumber);
@@ -179,7 +179,7 @@ export default function SeatManagementPage() {
                     key={seatNumber}
                     onClick={() => handleSeatClick(seatNumber)}
                     className={cn(
-                      "flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg text-center transition-colors",
+                      "flex flex-col items-center justify-center p-2 rounded-lg text-center transition-colors aspect-[3/4]",
                       isOccupied 
                         ? "bg-primary/10 border border-primary/20 hover:bg-primary/20" 
                         : "bg-card border hover:bg-muted"
@@ -187,11 +187,11 @@ export default function SeatManagementPage() {
                   >
                     <Armchair
                       className={cn(
-                        "h-6 w-6 sm:h-8 sm:w-8",
+                        "h-8 w-8",
                         isOccupied ? "text-primary" : "text-muted-foreground"
                       )}
                     />
-                    <p className="mt-2 text-base sm:text-lg font-bold">{seatNumber}</p>
+                    <p className="mt-2 text-lg font-bold">{seatNumber}</p>
                     <p className="text-xs text-muted-foreground truncate w-full">
                       {isOccupied ? student.name.split(" ")[0] : "Available"}
                     </p>
