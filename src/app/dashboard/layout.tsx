@@ -67,7 +67,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center justify-between h-20 px-4 sm:px-8">
+        <header className="flex items-center justify-between h-20 px-4 border-b sm:px-8">
           <div className="md:hidden">
             <SidebarTrigger />
           </div>
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </SidebarInset>
