@@ -1,4 +1,5 @@
 import type { Student, LibrarySettings, Payment, Shift } from './types';
+import { differenceInMonths, startOfMonth } from 'date-fns';
 
 export const shifts: Shift[] = [
   { id: 'shift-1', name: 'Morning Shift', startTime: '08:00', endTime: '14:00', capacity: 50, fee: 1500 },
@@ -12,7 +13,7 @@ export const librarySettings: LibrarySettings = {
   shifts: shifts,
 };
 
-export const students: Student[] = [
+export const rawStudents: Omit<Student, 'feeDetails'>[] = [
   {
     id: 'student-1',
     name: 'Aarav Sharma',
@@ -22,7 +23,6 @@ export const students: Student[] = [
     seatNumber: 1,
     shiftId: 'shift-1',
     joinDate: '2023-01-15',
-    feeDetails: { totalFee: 1500, paid: 1500, due: 0, lastPaymentDate: '2024-07-01' },
   },
   {
     id: 'student-2',
@@ -32,8 +32,7 @@ export const students: Student[] = [
     status: 'active',
     seatNumber: 2,
     shiftId: 'shift-1',
-    joinDate: '2023-02-01',
-    feeDetails: { totalFee: 1500, paid: 1000, due: 500, lastPaymentDate: '2024-06-05' },
+    joinDate: '2024-05-01',
   },
   {
     id: 'student-3',
@@ -44,7 +43,6 @@ export const students: Student[] = [
     seatNumber: 10,
     shiftId: 'shift-2',
     joinDate: '2023-03-10',
-    feeDetails: { totalFee: 1500, paid: 1500, due: 0, lastPaymentDate: '2024-07-02' },
   },
   {
     id: 'student-4',
@@ -55,7 +53,6 @@ export const students: Student[] = [
     seatNumber: null,
     shiftId: null,
     joinDate: '2023-04-20',
-    feeDetails: { totalFee: 1500, paid: 0, due: 1500, lastPaymentDate: null },
   },
   {
     id: 'student-5',
@@ -66,7 +63,6 @@ export const students: Student[] = [
     seatNumber: 15,
     shiftId: 'shift-3',
     joinDate: '2023-05-01',
-    feeDetails: { totalFee: 2000, paid: 2000, due: 0, lastPaymentDate: '2024-07-04' },
   },
     {
     id: 'student-6',
@@ -77,7 +73,6 @@ export const students: Student[] = [
     seatNumber: 3,
     shiftId: 'shift-1',
     joinDate: '2023-06-12',
-    feeDetails: { totalFee: 1500, paid: 1500, due: 0, lastPaymentDate: '2024-07-03' },
   },
   {
     id: 'student-7',
@@ -87,8 +82,7 @@ export const students: Student[] = [
     status: 'active',
     seatNumber: 12,
     shiftId: 'shift-2',
-    joinDate: '2023-07-18',
-    feeDetails: { totalFee: 1500, paid: 0, due: 1500, lastPaymentDate: '2024-06-10' },
+    joinDate: '2024-06-18',
   },
   {
     id: 'student-8',
@@ -99,7 +93,6 @@ export const students: Student[] = [
     seatNumber: 5,
     shiftId: 'shift-1',
     joinDate: '2023-08-01',
-    feeDetails: { totalFee: 1500, paid: 1500, due: 0, lastPaymentDate: '2024-07-05' },
   },
 ];
 
@@ -115,12 +108,60 @@ export const payments: Payment[] = [
     { id: 'pay-9', studentId: 'student-6', amount: 1500, date: '2024-06-03', month: 'June', year: 2024 },
 ];
 
+export const getStudentsWithCalculatedDues = (): Student[] => {
+    const today = new Date();
+
+    return rawStudents.map(student => {
+        const studentPayments = payments.filter(p => p.studentId === student.id);
+        const totalPaid = studentPayments.reduce((acc, p) => acc + p.amount, 0);
+
+        if (student.status === 'inactive' || !student.shiftId) {
+             const lastPayment = studentPayments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+            return {
+                ...student,
+                feeDetails: {
+                    totalFee: totalPaid,
+                    paid: totalPaid,
+                    due: 0,
+                    lastPaymentDate: lastPayment?.date || null,
+                }
+            };
+        }
+
+        const shift = shifts.find(s => s.id === student.shiftId);
+        const monthlyFee = shift?.fee || 0;
+
+        const joinDate = startOfMonth(new Date(student.joinDate));
+        
+        // Calculate months since joining, including the current month.
+        const monthsSinceJoining = differenceInMonths(today, joinDate) + 1;
+        
+        const totalFee = monthsSinceJoining * monthlyFee;
+        const due = totalFee - totalPaid;
+        
+        const lastPayment = studentPayments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+        return {
+            ...student,
+            feeDetails: {
+                totalFee: totalFee,
+                paid: totalPaid,
+                due: due > 0 ? due : 0,
+                lastPaymentDate: lastPayment?.date || null,
+            }
+        };
+    });
+};
+
+export const students = getStudentsWithCalculatedDues();
+
+
 export const getMonthlyCollection = () => {
     const monthlyData: { [key: string]: number } = {};
-    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const currentYear = new Date().getFullYear();
+    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    const currentYearPayments = payments.filter(p => p.year === currentYear);
+    const currentYearPayments = payments.filter(p => new Date(p.date).getFullYear() === currentYear);
 
     currentYearPayments.forEach(payment => {
         const paymentMonths = Array.isArray(payment.month) ? payment.month : [payment.month];
@@ -128,20 +169,16 @@ export const getMonthlyCollection = () => {
 
         paymentMonths.forEach(monthStr => {
             const monthName = monthStr.split(' ')[0];
-            if (monthOrder.includes(monthName)) {
-                if (monthlyData[monthName]) {
-                    monthlyData[monthName] += amountPerMonth;
-                } else {
-                    monthlyData[monthName] = amountPerMonth;
-                }
+             if (monthlyData[monthName]) {
+                monthlyData[monthName] += amountPerMonth;
+            } else {
+                monthlyData[monthName] = amountPerMonth;
             }
         });
     });
 
-    return monthOrder.map(month => {
-        return {
-            month: month.substring(0, 3),
-            total: monthlyData[month] || 0,
-        }
-    });
+    return monthOrder.map(month => ({
+        month: month.substring(0, 3),
+        total: monthlyData[month] || 0,
+    }));
 };
