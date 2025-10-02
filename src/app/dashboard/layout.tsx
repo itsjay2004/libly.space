@@ -17,7 +17,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Armchair } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, ChevronDown, Armchair, CreditCard } from 'lucide-react';
 import Logo from "@/components/logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <SidebarMenuButton tooltip="Seats">
                   <Armchair />
                   Seat Management
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/dashboard/payments">
+                <SidebarMenuButton tooltip="Payments">
+                  <CreditCard />
+                  Payment Management
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
