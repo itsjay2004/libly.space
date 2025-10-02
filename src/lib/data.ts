@@ -118,41 +118,30 @@ export const payments: Payment[] = [
 export const getMonthlyCollection = () => {
     const monthlyData: { [key: string]: number } = {};
     const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const currentYear = new Date().getFullYear();
 
-    payments.forEach(payment => {
-        // Handle both string and array for month
+    const currentYearPayments = payments.filter(p => p.year === currentYear);
+
+    currentYearPayments.forEach(payment => {
         const paymentMonths = Array.isArray(payment.month) ? payment.month : [payment.month];
-        const monthsInYear = paymentMonths.length;
-        const amountPerMonth = monthsInYear > 0 ? payment.amount / monthsInYear : 0;
+        const amountPerMonth = payment.amount / paymentMonths.length;
 
         paymentMonths.forEach(monthStr => {
-            const year = payment.year;
-            // The month can be just the month name.
             const monthName = monthStr.split(' ')[0];
-            const monthIndex = monthOrder.indexOf(monthName);
-            
-            if (monthIndex !== -1) {
-                const key = `${monthOrder[monthIndex]} ${year}`;
-                if (monthlyData[key]) {
-                    monthlyData[key] += amountPerMonth;
+            if (monthOrder.includes(monthName)) {
+                if (monthlyData[monthName]) {
+                    monthlyData[monthName] += amountPerMonth;
                 } else {
-                    monthlyData[key] = amountPerMonth;
+                    monthlyData[monthName] = amountPerMonth;
                 }
             }
         });
     });
 
-    const labels = Array.from({ length: 12 }).map((_, i) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        return `${monthOrder[d.getMonth()]} ${d.getFullYear()}`;
-    }).reverse();
-
-    return labels.map(label => {
-        const [month] = label.split(" ");
+    return monthOrder.map(month => {
         return {
             month: month.substring(0, 3),
-            total: monthlyData[label] || 0,
+            total: monthlyData[month] || 0,
         }
     });
 };
