@@ -18,7 +18,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">An overview of your library's status.</p>
       </div>
 
@@ -51,15 +51,15 @@ export default function DashboardPage() {
       
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-            <StudentLookup />
+            <DueReminders />
         </div>
         <div className="lg:col-span-1">
-            <DueReminders />
+          <CollectionChart data={monthlyCollection} />
         </div>
       </div>
 
       <div className="grid gap-8">
-          <CollectionChart data={monthlyCollection} />
+         <StudentLookup />
       </div>
 
     </div>

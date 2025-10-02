@@ -12,6 +12,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
+import Link from "next/link";
 
 export default function DueReminders() {
   const studentsWithDues = students
@@ -30,14 +31,19 @@ export default function DueReminders() {
             studentsWithDues.map((student) => (
             <div key={student.id} className="flex items-center">
               <Avatar className="h-9 w-9">
-                 <AvatarImage src={`https://picsum.photos/seed/${student.phone}/40/40`} alt={student.name} />
+                 <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="ml-4 space-y-1">
                 <p className="text-sm font-medium leading-none">{student.name}</p>
-                <p className="text-sm text-muted-foreground">{student.email}</p>
+                <p className="text-sm text-muted-foreground">{student.phone}</p>
               </div>
-              <div className="ml-auto font-medium">₹{student.feeDetails.due.toLocaleString()}</div>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="font-medium text-destructive">₹{student.feeDetails.due.toLocaleString()}</span>
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/students/${student.id}`}>View</Link>
+                </Button>
+              </div>
             </div>
             ))
         ) : (

@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-3">
              <Logo />
@@ -36,7 +36,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <Link href="/dashboard">
-                <SidebarMenuButton tooltip="Dashboard">
+                <SidebarMenuButton isActive tooltip="Dashboard">
                   <LayoutDashboard />
                   Dashboard
                 </SidebarMenuButton>
@@ -85,12 +85,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <AvatarImage src="https://picsum.photos/seed/admin/40/40" />
                     <AvatarFallback>A</AvatarFallback>
                   </Avatar>
-                  <div className="text-left">
+                  <div className="text-left group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium text-sidebar-foreground">Admin</p>
                     <p className="text-xs text-sidebar-foreground/70">admin@libly.space</p>
                   </div>
                 </div>
-                <ChevronDown className="h-4 w-4 text-sidebar-foreground/70" />
+                <ChevronDown className="h-4 w-4 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 mb-2" align="end" forceMount>
@@ -114,15 +114,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center justify-between h-14 px-4 border-b bg-card">
+        <header className="flex items-center justify-between h-14 px-4 border-b">
           <div className="md:hidden">
             <SidebarTrigger />
           </div>
-          <div className="flex-1">
+           <div className="flex items-center gap-4">
             {/* Can add breadcrumbs or page title here */}
           </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon">
+                <Settings className="h-5 w-5" />
+            </Button>
+            <Avatar className="h-9 w-9">
+                <AvatarImage src="https://picsum.photos/seed/admin/40/40" />
+                <AvatarFallback>A</AvatarFallback>
+            </Avatar>
+          </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-background/80">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </SidebarInset>

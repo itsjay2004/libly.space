@@ -19,21 +19,20 @@ export default function CollectionChart({ data }: CollectionChartProps) {
     <Card>
         <CardHeader>
             <CardTitle>Month-wise Collection</CardTitle>
-            <CardDescription>Total fee collection over the past months.</CardDescription>
         </CardHeader>
         <CardContent>
             <ChartContainer config={{}} className="h-64 w-full">
                 <ResponsiveContainer>
-                    <BarChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
+                    <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <XAxis
                             dataKey="month"
-                            stroke="hsl(var(--foreground))"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
                         />
                         <YAxis
-                            stroke="hsl(var(--foreground))"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
