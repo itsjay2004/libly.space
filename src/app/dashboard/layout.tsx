@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard" legacyBehavior passHref>
+              <Link href="/dashboard">
                 <SidebarMenuButton tooltip="Dashboard">
                   <LayoutDashboard />
                   Dashboard
@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/dashboard/students" legacyBehavior passHref>
+              <Link href="/dashboard/students">
                 <SidebarMenuButton tooltip="Students">
                   <Users />
                   Student Management
@@ -51,7 +51,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/dashboard/settings" legacyBehavior passHref>
+              <Link href="/dashboard/settings">
                 <SidebarMenuButton tooltip="Settings">
                   <Settings />
                   Library Settings
@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <Link href="/" legacyBehavior passHref>
+                <Link href="/">
                     <DropdownMenuItem>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
