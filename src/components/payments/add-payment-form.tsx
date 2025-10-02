@@ -15,11 +15,26 @@ import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Badge } from '../ui/badge';
+import React from 'react';
+
+const months = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
 
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   date: z.date({ required_error: 'Please select a date.' }),
+  months: z.array(z.string()).min(1, { message: "Please select at least one month."}),
 });
 
 export default function AddPaymentForm() {
@@ -29,6 +44,7 @@ export default function AddPaymentForm() {
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       date: new Date(),
+      months: [],
     },
   });
 
@@ -39,9 +55,9 @@ export default function AddPaymentForm() {
     const student = students.find(s => s.id === values.studentId);
     toast({
       title: 'Payment Recorded',
-      description: `Payment of ₹${values.amount} for ${student?.name} has been recorded.`,
+      description: `Payment of ₹${values.amount} for ${student?.name} for ${values.months.join(', ')} has been recorded.`,
     });
-    form.reset({ date: new Date() });
+    form.reset({ date: new Date(), months: [] });
   };
 
   return (
@@ -116,6 +132,73 @@ export default function AddPaymentForm() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="months"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Month(s)</FormLabel>
+                   <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between h-auto",
+                            !field.value?.length && "text-muted-foreground"
+                          )}
+                        >
+                            <div className="flex gap-1 flex-wrap">
+                            {field.value?.length > 0 ? field.value.map(month => (
+                                <Badge key={month} variant="secondary" className="mr-1">{month}</Badge>
+                            )) : "Select month(s)"}
+                            </div>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search months..." />
+                        <CommandList>
+                          <CommandEmpty>No months found.</CommandEmpty>
+                          <CommandGroup>
+                            {months.map((month) => {
+                              const isSelected = field.value.includes(month);
+                              return (
+                                <CommandItem
+                                    key={month}
+                                    value={month}
+                                    onSelect={() => {
+                                        if (isSelected) {
+                                            field.onChange(field.value.filter((m) => m !== month));
+                                        } else {
+                                            field.onChange([...field.value, month]);
+                                        }
+                                    }}
+                                >
+                                    <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        isSelected ? "opacity-100" : "opacity-0"
+                                    )}
+                                    />
+                                    {month}
+                                </CommandItem>
+                              )
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="amount"

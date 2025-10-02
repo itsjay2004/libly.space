@@ -34,5 +34,5 @@ export interface Payment {
   studentId: string;
   amount: number;
   date: string;
-  month: string;
+  month: string | string[];
 }
