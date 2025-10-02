@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -23,6 +26,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  const menuItems = [
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard /> },
+    { href: "/dashboard/students", label: "Students", icon: <Users /> },
+    { href: "/dashboard/seats", label: "Seats", icon: <Armchair /> },
+    { href: "/dashboard/payments", label: "Payments", icon: <CreditCard /> },
+    { href: "/dashboard/settings", label: "Settings", icon: <Settings /> },
+  ];
+
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
@@ -34,46 +47,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <Link href="/dashboard">
-                <SidebarMenuButton isActive tooltip="Dashboard">
-                  <LayoutDashboard />
-                  Dashboard
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <Link href="/dashboard/students">
-                <SidebarMenuButton tooltip="Students">
-                  <Users />
-                  Students
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <Link href="/dashboard/seats">
-                <SidebarMenuButton tooltip="Seats">
-                  <Armchair />
-                  Seats
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <Link href="/dashboard/payments">
-                <SidebarMenuButton tooltip="Payments">
-                  <CreditCard />
-                  Payments
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <Link href="/dashboard/settings">
-                <SidebarMenuButton tooltip="Settings">
-                  <Settings />
-                  Settings
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
+            {menuItems.map((item) => (
+               <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton 
+                    isActive={pathname === item.href} 
+                    tooltip={item.label}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
