@@ -23,29 +23,26 @@ import { LayoutDashboard, Users, Settings, LogOut, Armchair, CreditCard, Bell, M
 import Logo from "@/components/logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useUser } from "@/hooks/use-user";
 import { useTheme } from "next-themes";
+import type { User } from "@supabase/supabase-js";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading } = useUser();
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    fetchUser();
-  }, [supabase]);
+    if (!isLoading && !user) {
+      router.push('/');
+    }
+  }, [user, isLoading, router]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    // Assuming you have a signOut function from your auth provider
+    // await auth.signOut();
+    router.push('/');
   };
 
   const menuItems = [
@@ -60,6 +57,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (pathname.startsWith('/dashboard/students/') && pathname !== '/dashboard/students') {
       currentPage = { href: pathname, label: "Student Profile", icon: <Users />, title: "Student Profile", description: "Detailed information about the student."}
+  }
+
+  if (isLoading || !user) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <p>Loading...</p>
+        </div>
+    )
   }
 
   return (
@@ -105,18 +110,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon">
+            <Button variant="outline" size="icon">
                 <Bell className="h-5 w-5" />
             </Button>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 h-auto p-0">
-                      <Avatar className="h-9 w-9">
+                  <Button variant="outline" className="flex items-center gap-2 rounded-full p-1 pr-2">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
                         <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                        <div className="text-left hidden sm:block">
-                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.full_name ?? 'Admin'}</p>
+                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.name ?? 'Admin'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                       </div>
                   </Button>
@@ -124,7 +129,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuContent className="w-56 mt-2" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name ?? 'Admin'}</p>
+                            <p className="text-sm font-medium leading-none">{user?.user_metadata?.name ?? 'Admin'}</p>
                             <p className="text-xs leading-none text-muted-foreground">
                                 {user?.email}
                             </p>
