@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { students } from '@/lib/data';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Calendar } from '../ui/calendar';
@@ -24,6 +23,8 @@ import {
 } from "@/components/ui/select"
 import { Badge } from '../ui/badge';
 import React from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { Student } from '@/lib/types';
 
 const months = [
   "January", "February", "March", "April", "May", "June", 
@@ -33,21 +34,29 @@ const months = [
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
+interface AddPaymentFormProps {
+  studentId?: string;
+  libraryId: string;
+  students?: Student[]; // Optional, only provided for payments page
+  onPaymentSuccess: () => void;
+}
 
-const paymentFormSchema = z.object({
-  studentId: z.string({ required_error: 'Please select a student.' }),
-  amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
-  date: z.date({ required_error: 'Please select a date.' }),
-  year: z.coerce.number(),
-  months: z.array(z.string()).min(1, { message: "Please select at least one month."}),
-});
-
-export default function AddPaymentForm() {
+export default function AddPaymentForm({ studentId, libraryId, students, onPaymentSuccess }: AddPaymentFormProps) {
   const { toast } = useToast();
+  const supabase = createClient();
+
+  const paymentFormSchema = z.object({
+    studentId: students ? z.string({ required_error: 'Please select a student.' }) : z.string().optional(),
+    amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
+    date: z.date({ required_error: 'Please select a date.' }),
+    year: z.coerce.number(),
+    months: z.array(z.string()).min(1, { message: "Please select at least one month."}),
+  });
   
   const form = useForm<z.infer<typeof paymentFormSchema>>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
+      studentId: studentId || undefined,
       amount: 0,
       date: new Date(),
       months: [],
@@ -55,94 +64,114 @@ export default function AddPaymentForm() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof paymentFormSchema>) => {
-    // In a real app, you would handle the payment logic here
-    // (e.g., update student's due amount, add to payments list)
-    const paymentPayload = {
-      ...values,
-      months: values.months.map(month => `${month} ${values.year}`)
+  const onSubmit = async (values: z.infer<typeof paymentFormSchema>) => {
+    const targetStudentId = studentId || values.studentId;
+
+    if (!targetStudentId || !libraryId) {
+        toast({ title: "Error", description: "Student or Library ID is missing.", variant: "destructive" });
+        return;
     }
-    console.log(paymentPayload);
-    const student = students.find(s => s.id === values.studentId);
-    toast({
-      title: 'Payment Recorded',
-      description: `Payment of ₹${values.amount} for ${student?.name} for ${values.months.join(', ')} ${values.year} has been recorded.`,
-    });
-    form.reset({ amount: 0, date: new Date(), months: [], year: new Date().getFullYear() });
+
+    const paymentRecords = values.months.map(month => ({
+        student_id: targetStudentId,
+        library_id: libraryId,
+        amount: values.amount,
+        payment_date: values.date.toISOString(),
+        for_month: `${month} ${values.year}`,
+        status: 'paid',
+        due_date: values.date.toISOString(), // Assuming paid on due date, or will be updated later
+    }));
+
+    const { error } = await supabase.from('payments').insert(paymentRecords);
+    
+    if (error) {
+        console.error("Error recording payment:", error);
+        toast({ title: "Error recording payment", description: error.message, variant: "destructive" });
+    } else {
+        toast({
+          title: 'Payment Recorded',
+          description: `Payment of ₹${values.amount} for ${values.months.join(', ')} ${values.year} has been recorded.`,
+        });
+        form.reset({ studentId: studentId || undefined, amount: 0, date: new Date(), months: [], year: new Date().getFullYear() });
+        onPaymentSuccess();
+    }
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Record a Payment</CardTitle>
-        <CardDescription>Select a student and enter the amount paid.</CardDescription>
+        <CardDescription>Select month(s) and enter the amount paid.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="studentId"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Student</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            "w-full justify-between",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value
-                            ? students.find(
-                                (student) => student.id === field.value
-                              )?.name
-                            : "Select a student"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                      <Command>
-                        <CommandInput placeholder="Search student..." />
-                        <CommandList>
-                          <CommandEmpty>No student found.</CommandEmpty>
-                          <CommandGroup>
-                            {students.map((student) => (
-                              <CommandItem
-                                value={student.name}
-                                key={student.id}
-                                onSelect={() => {
-                                  form.setValue("studentId", student.id)
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    student.id === field.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <div>
-                                  <p>{student.name}</p>
-                                  <p className="text-xs text-muted-foreground">{student.phone}</p>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+            {!studentId && students && (
+              <FormField
+                control={form.control}
+                name="studentId"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Student</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? students.find(
+                                  (s) => s.id === field.value
+                                )?.name
+                              : "Select a student"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search student..." />
+                          <CommandList>
+                            <CommandEmpty>No student found.</CommandEmpty>
+                            <CommandGroup>
+                              {students.map((s) => (
+                                <CommandItem
+                                  value={s.name}
+                                  key={s.id}
+                                  onSelect={() => {
+                                    form.setValue("studentId", s.id, { shouldValidate: true });
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      s.id === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  <div>
+                                    <p>{s.name}</p>
+                                    <p className="text-xs text-muted-foreground">{s.phone}</p>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="grid grid-cols-3 gap-4">
                <FormField

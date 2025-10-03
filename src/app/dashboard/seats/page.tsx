@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -9,97 +10,197 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { shifts, students as allStudents, librarySettings } from "@/lib/data";
 import { Armchair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import StudentActions from "@/components/students/student-actions";
 import { useToast } from "@/hooks/use-toast";
-import type { Student } from "@/lib/types";
+import type { Student, Shift } from "@/lib/types";
+import { User } from "@supabase/supabase-js";
+import { checkOverlap } from '@/lib/time-utils';
 
 export default function SeatManagementPage() {
-  const [selectedShift, setSelectedShift] = useState(shifts[0].id);
-  const [students, setStudents] = useState<Student[]>(allStudents);
+  const supabase = createClient();
+  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [libraryId, setLibraryId] = useState<string | null>(null);
+  const [totalSeats, setTotalSeats] = useState(0);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedShift, setSelectedShift] = useState<string | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async (currentLibraryId: string) => {
+    setLoading(true);
+    const { data: studentsData, error: studentsError } = await supabase
+      .from('students')
+      .select('*, shifts(name, start_time, end_time)')
+      .eq('library_id', currentLibraryId);
+
+    if (studentsData) {
+      setStudents(studentsData);
+    }
+    if (studentsError) {
+      console.error("Error fetching students in seat management:", studentsError);
+      toast({ title: "Error fetching students", description: studentsError.message, variant: "destructive" });
+    }
+    setLoading(false);
+  }, [supabase, toast]);
+
+  useEffect(() => {
+    const getInitialData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        const { data: libraryData, error: libraryError } = await supabase
+          .from('libraries')
+          .select('id, total_seats')
+          .eq('owner_id', user.id)
+          .single();
+
+        if (libraryData) {
+          setLibraryId(libraryData.id);
+          setTotalSeats(libraryData.total_seats);
+
+          const { data: shiftsData, error: shiftsError } = await supabase
+            .from('shifts')
+            .select('*')
+            .eq('library_id', libraryData.id);
+
+          if (shiftsData) {
+            setShifts(shiftsData);
+            setSelectedShift(shiftsData[0]?.id);
+          }
+          if (shiftsError) {
+            console.error("Error fetching shifts in seat management:", shiftsError);
+            toast({ title: "Error fetching shifts", description: shiftsError.message, variant: "destructive" });
+          }
+          fetchData(libraryData.id);
+        } else if (libraryError?.code !== 'PGRST116') {
+          console.error("Error fetching library data in seat management:", libraryError);
+          toast({ title: "Error fetching library data", description: libraryError.message, variant: "destructive" });
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    getInitialData();
+  }, [supabase, toast, fetchData]);
 
   const getStudentForSeat = (seatNumber: number) => {
-    const fullDayShiftId = shifts.find(s => s.name === 'Full Day')?.id;
-    const selectedShiftDetails = shifts.find(s => s.id === selectedShift);
+    const currentlySelectedShift = shifts.find(s => s.id === selectedShift);
+    if (!currentlySelectedShift) return null;
 
-    return students.find((student) => {
-      if (student.seatNumber !== seatNumber) return false;
-
-      // A full-day student occupies the seat for all shifts.
-      if (student.shiftId === fullDayShiftId) return true;
+    const overlappingStudents = students.filter(student => {
+      if (student.seat_number !== seatNumber || !student.shift_id || !student.shifts) return false;
       
-      // If the selected shift is 'Full Day', show all occupied seats.
-      if (selectedShiftDetails?.name === 'Full Day') return true;
+      const studentShift = shifts.find(s => s.id === student.shift_id);
+      if (!studentShift) return false;
 
-      // Otherwise, check if the student's shift matches the selected one.
-      return student.shiftId === selectedShift;
+      console.log(`[getStudentForSeat Debug] currentlySelectedShift: ${currentlySelectedShift.start_time}-${currentlySelectedShift.end_time}`);
+      console.log(`[getStudentForSeat Debug] studentShift: ${studentShift.start_time}-${studentShift.end_time}`);
+
+      const overlapResult = checkOverlap(
+        currentlySelectedShift.start_time,
+        currentlySelectedShift.end_time,
+        studentShift.start_time,
+        studentShift.end_time
+      );
+      console.log(`[getStudentForSeat Debug] Overlap check result: ${overlapResult}`);
+      return overlapResult;
     });
+    return overlappingStudents.length > 0 ? overlappingStudents[0] : null;
   };
   
   const studentForSelectedSeat = selectedSeat ? getStudentForSeat(selectedSeat) : null;
-
-  const totalSeats = librarySettings.totalSeats;
 
   const handleSeatClick = (seatNumber: number) => {
     setSelectedSeat(seatNumber);
     setIsModalOpen(true);
   };
 
-  const handleUnassign = () => {
+  const handleUnassign = async () => {
     if (!studentForSelectedSeat) return;
 
-    setStudents(students.map(s => 
-      s.id === studentForSelectedSeat.id ? { ...s, seatNumber: null } : s
-    ));
+    const { error } = await supabase
+      .from('students')
+      .update({ seat_number: null })
+      .eq('id', studentForSelectedSeat.id);
 
-    toast({
-      title: "Seat Unassigned",
-      description: `${studentForSelectedSeat.name} has been unassigned from seat #${selectedSeat}.`,
-    });
+    if (error) {
+      toast({ title: "Error unassigning seat", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Seat Unassigned",
+        description: `${studentForSelectedSeat.name} has been unassigned from seat #${selectedSeat}.`,
+      });
+      if(libraryId) fetchData(libraryId);
+    }
     setIsModalOpen(false);
     setSelectedSeat(null);
   };
 
   const AssignSeatDialogContent = () => {
-     const unassignedStudents = students.filter(s => s.shiftId === selectedShift && s.seatNumber === null && s.status === 'active');
+     const unassignedStudents = students.filter(s => s.shift_id === selectedShift && s.seat_number === null && s.status === 'active');
      const [selectedStudentId, setSelectedStudentId] = useState<string>("");
 
-     const handleAssign = () => {
+     const handleAssign = async () => {
         if (!selectedStudentId || !selectedSeat) return;
         
-        const isSeatOccupiedByFullDay = students.some(s => 
-            s.seatNumber === selectedSeat &&
-            s.shiftId === shifts.find(shift => shift.name === 'Full Day')?.id
-        );
-
-        if(isSeatOccupiedByFullDay){
-            toast({
-              variant: 'destructive',
-              title: "Seat Already Booked",
-              description: `Seat #${selectedSeat} is already booked for the full day.`,
-            });
-            return;
+        const currentlySelectedShiftDetails = shifts.find(s => s.id === selectedShift);
+        if (!currentlySelectedShiftDetails) {
+          toast({ title: "Error", description: "Selected shift details not found.", variant: "destructive" });
+          return;
         }
 
-        setStudents(students.map(s => {
-          if (s.id === selectedStudentId) {
-            return { ...s, seatNumber: selectedSeat };
-          }
-          return s;
-        }));
+        // Corrected check for overlaps with existing assignments for the selected seat
+        const isOverlappingAssigned = students.some(existingStudent => {
+          // Only consider students already assigned to the *selected seat*
+          if (existingStudent.seat_number !== selectedSeat || !existingStudent.shift_id || !existingStudent.shifts) return false;
 
-        const student = students.find(s => s.id === selectedStudentId);
-        toast({
-          title: "Seat Assigned",
-          description: `${student?.name} has been assigned to seat #${selectedSeat}.`,
+          const existingStudentShift = shifts.find(s => s.id === existingStudent.shift_id);
+          if (!existingStudentShift) return false;
+
+          console.log(`[handleAssign Debug] New student's selected shift: ${currentlySelectedShiftDetails.start_time}-${currentlySelectedShiftDetails.end_time}`);
+          console.log(`[handleAssign Debug] Existing student (${existingStudent.name})'s assigned shift: ${existingStudentShift.start_time}-${existingStudentShift.end_time}`);
+
+          const overlapResult = checkOverlap(
+            currentlySelectedShiftDetails.start_time,
+            currentlySelectedShiftDetails.end_time,
+            existingStudentShift.start_time,
+            existingStudentShift.end_time
+          );
+          console.log(`[handleAssign Debug] Overlap check result: ${overlapResult}`);
+          return overlapResult;
         });
+
+        if (isOverlappingAssigned) {
+          toast({
+            variant: 'destructive',
+            title: "Seat Unavailable",
+            description: `Seat #${selectedSeat} is already assigned for an overlapping shift. Please choose another seat or unassign the conflicting student.`,
+          });
+          return;
+        }
+
+        const { error } = await supabase
+          .from('students')
+          .update({ seat_number: selectedSeat })
+          .eq('id', selectedStudentId);
+
+        if (error) {
+          toast({ title: "Error assigning seat", description: error.message, variant: "destructive" });
+        } else {
+          const student = students.find(s => s.id === selectedStudentId);
+          toast({
+            title: "Seat Assigned",
+            description: `${student?.name} has been assigned to seat #${selectedSeat}.`,
+          });
+          if (libraryId) fetchData(libraryId);
+        }
         setIsModalOpen(false);
         setSelectedSeat(null);
      };
@@ -110,7 +211,7 @@ export default function SeatManagementPage() {
           <DialogHeader>
             <DialogTitle>Seat #{selectedSeat} - Occupied</DialogTitle>
             <DialogDescription>
-              This seat is currently assigned to {studentForSelectedSeat.name}.
+              This seat is currently assigned to {studentForSelectedSeat.name} for the {studentForSelectedSeat.shifts?.name} shift.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -126,7 +227,7 @@ export default function SeatManagementPage() {
     }
 
     return (
-      <>
+      <> 
         <DialogHeader>
           <DialogTitle>Assign Seat #{selectedSeat}</DialogTitle>
            <DialogDescription>
@@ -151,7 +252,7 @@ export default function SeatManagementPage() {
              <p className="text-sm text-muted-foreground">OR</p>
             <div className="flex-1 border-t" />
            </div>
-           <StudentActions />
+           <StudentActions onActionComplete={() => { if(libraryId) fetchData(libraryId); setIsModalOpen(false); }} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
@@ -162,6 +263,22 @@ export default function SeatManagementPage() {
   };
 
 
+  if (loading) {
+    return <p>Loading seat information...</p>
+  }
+
+  if (!libraryId) {
+    return (
+        <div className="text-center p-8 border-2 border-dashed rounded-lg">
+            <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
+            <p className="mb-4">Please set up your library in the settings to manage seats.</p>
+            <Button asChild>
+                <a href="/dashboard/settings">Go to Settings</a>
+            </Button>
+        </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
@@ -171,7 +288,7 @@ export default function SeatManagementPage() {
           </SelectTrigger>
           <SelectContent>
             {shifts.map((shift) => (
-              <SelectItem key={shift.id} value={shift.id}>
+              <SelectItem key={shift.id} value={shift.id!}>
                 {shift.name}
               </SelectItem>
             ))}
@@ -181,9 +298,9 @@ export default function SeatManagementPage() {
       <Card>
         <CardHeader>
           <CardTitle>Library Layout</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <CardDescription>
               Click on a seat to assign or manage it.
-          </p>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-4">
@@ -210,7 +327,7 @@ export default function SeatManagementPage() {
                     />
                     <p className="mt-2 text-lg font-bold">{seatNumber}</p>
                     <p className="text-xs text-muted-foreground truncate w-full">
-                      {isOccupied ? student.name.split(" ")[0] : "Available"}
+                      {isOccupied ? `${student.name.split(" ")[0]} (${student.shifts?.name})` : "Available"}
                     </p>
                   </button>
                 );

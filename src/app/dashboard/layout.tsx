@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarTrigger,
   SidebarInset,
 } from '@/components/ui/sidebar';
@@ -20,13 +19,34 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { LayoutDashboard, Users, Settings, LogOut, Armchair, CreditCard, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, Armchair, CreditCard, Bell, Moon, Sun } from 'lucide-react';
 import Logo from "@/components/logo";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { useTheme } from "next-themes";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
+  const { setTheme } = useTheme();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    fetchUser();
+  }, [supabase]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard />, title: "Dashboard", description: "An overview of your library's status." },
@@ -41,7 +61,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (pathname.startsWith('/dashboard/students/') && pathname !== '/dashboard/students') {
       currentPage = { href: pathname, label: "Student Profile", icon: <Users />, title: "Student Profile", description: "Detailed information about the student."}
   }
-
 
   return (
     <SidebarProvider>
@@ -69,9 +88,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-         {/* Can be used for user profile, logout, etc. */}
-        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex items-center justify-between h-20 px-4 border-b sm:px-8">
@@ -96,21 +112,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 h-auto p-0">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src="https://picsum.photos/seed/admin/40/40" />
-                        <AvatarFallback>A</AvatarFallback>
+                        <AvatarImage src={user?.user_metadata?.avatar_url} />
+                        <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                        <div className="text-left hidden sm:block">
-                        <p className="text-sm font-medium text-foreground">Admin</p>
-                        <p className="text-xs text-muted-foreground">admin@libly.space</p>
+                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.full_name ?? 'Admin'}</p>
+                        <p className="text-xs text-muted-foreground">{user?.email}</p>
                       </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 mt-2" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">Admin</p>
+                            <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name ?? 'Admin'}</p>
                             <p className="text-xs leading-none text-muted-foreground">
-                                admin@libly.space
+                                {user?.email}
                             </p>
                         </div>
                     </DropdownMenuLabel>
@@ -121,11 +137,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                             <span>Settings</span>
                         </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href="/">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
-                        </Link>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Sun className="h-4 w-4 mr-2 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                        <Moon className="absolute h-4 w-4 mr-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                        <span>Toggle theme</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem onClick={() => setTheme("light")}>
+                            Light
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTheme("dark")}>
+                            Dark
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTheme("system")}>
+                            System
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
           </DropdownMenu>

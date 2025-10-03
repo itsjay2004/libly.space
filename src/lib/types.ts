@@ -4,23 +4,20 @@ export interface Student {
   email: string;
   phone: string;
   status: 'active' | 'inactive';
-  seatNumber: number | null;
-  shiftId: string | null;
-  joinDate: string;
-  feeDetails: {
-    totalFee: number;
-    paid: number;
-    due: number;
-    lastPaymentDate: string | null;
-  };
+  seat_number: number | null;
+  shift_id: string | null;
+  join_date: string;
+  library_id: string;
+  shifts?: { name: string; start_time: string; end_time: string; fee: number } | null;
+  payments?: { amount: number; status: 'paid' | 'due' }[];
 }
 
 export interface Shift {
-  id: string;
+  id?: string;
+  library_id?: string;
   name: string;
-  startTime: string;
-  endTime: string;
-  capacity: number;
+  start_time: string;
+  end_time: string;
   fee: number;
 }
 
@@ -31,9 +28,11 @@ export interface LibrarySettings {
 
 export interface Payment {
   id: string;
-  studentId: string;
+  student_id: string;
+  library_id: string;
   amount: number;
-  date: string;
-  month: string | string[]; // This will store ["July 2024", "August 2024"]
-  year: number;
+  payment_date: string; 
+  due_date: string;
+  for_month: string; 
+  status: 'paid' | 'due';
 }
