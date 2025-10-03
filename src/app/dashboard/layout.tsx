@@ -111,12 +111,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="bg-muted/50">
                 <Bell className="h-5 w-5" />
             </Button>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 p-1 pr-2">
+                  <Button variant="ghost" className="flex items-center gap-2 p-1 pr-2 bg-muted/50">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
                         <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
