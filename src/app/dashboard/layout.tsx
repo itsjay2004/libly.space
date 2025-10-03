@@ -26,12 +26,14 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useTheme } from "next-themes";
 import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useUser();
   const { setTheme } = useTheme();
+  const supabase = createClient();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -40,8 +42,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [user, isLoading, router]);
 
   const handleSignOut = async () => {
-    // Assuming you have a signOut function from your auth provider
-    // await auth.signOut();
+    await supabase.auth.signOut();
     router.push('/');
   };
 
@@ -110,18 +111,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon">
+            <Button variant="secondary" size="icon">
                 <Bell className="h-5 w-5" />
             </Button>
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2 rounded-full p-1 pr-2">
+                  <Button variant="secondary" className="flex items-center gap-2 rounded-full p-1 pr-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
                         <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                        <div className="text-left hidden sm:block">
-                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.name ?? 'Admin'}</p>
+                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.full_name ?? 'Admin'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                       </div>
                   </Button>
@@ -129,7 +130,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuContent className="w-56 mt-2" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user?.user_metadata?.name ?? 'Admin'}</p>
+                            <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name ?? 'Admin'}</p>
                             <p className="text-xs leading-none text-muted-foreground">
                                 {user?.email}
                             </p>
