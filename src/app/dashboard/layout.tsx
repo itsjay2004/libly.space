@@ -51,7 +51,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { href: "/dashboard/students", label: "Students", icon: <Users />, title: "Student Management", description: "Add, view, and manage student profiles." },
     { href: "/dashboard/seats", label: "Seats", icon: <Armchair />, title: "Seat Management", description: "Visually manage seat assignments for each shift." },
     { href: "/dashboard/payments", label: "Payments", icon: <CreditCard />, title: "Payment Management", description: "Record new payments and view transaction history." },
-    { href: "/dashboard/settings", label: "Settings", icon: <Settings />, title: "Library Settings", description: "Configure your library's capacity and shifts." },
+    { href: "/dashboard/library", label: "Library", icon: <Settings />, title: "Library Settings", description: "Configure your library's capacity and shifts." },
+    { href: "/dashboard/account", label: "Account", icon: <Users />, title: "Account Settings", description: "Manage your account details." },
   ];
 
   let currentPage = menuItems.find((item) => pathname === item.href);
@@ -130,9 +131,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem asChild>
-                        <CustomLink href="/dashboard/settings">
+                        <CustomLink href="/dashboard/account">
                             <Settings className="mr-2 h-4 w-4" />
-                            <span>Settings</span>
+                            <span>Account</span>
                         </CustomLink>
                     </DropdownMenuItem>
                     <DropdownMenuSub>
@@ -152,7 +153,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                           <DropdownMenuItem onClick={() => setTheme("system")}>
                             System
                           </DropdownMenuItem>
-                        </DropdownMenuSubContent>
+                          </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">

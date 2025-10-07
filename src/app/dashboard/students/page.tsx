@@ -37,10 +37,11 @@ export default async function StudentsPage() {
     .from('students')
     .select(`
       *,
-      shifts ( name ),
+      shifts ( * ),
       payments ( amount, status )
     `)
-    .eq('library_id', libraryData.id);
+    .eq('library_id', libraryData.id)
+    .order('join_date', { ascending: false });
 
   if (studentsError) {
     console.error('Error fetching students:', studentsError);

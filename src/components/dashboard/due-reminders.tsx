@@ -12,6 +12,7 @@ import {
   AvatarImage,
 } from "@/components/ui/avatar"
 import Link from "next/link";
+import { CustomLink } from "../ui/custom-link";
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { startOfMonth, endOfMonth, differenceInMonths, differenceInDays, getDaysInMonth, addMonths, isSameMonth } from 'date-fns';
@@ -140,7 +141,7 @@ export default async function DueReminders() {
               <div className="ml-auto flex items-center gap-2">
                 <span className="font-medium text-destructive">₹{student.calculatedDue.toLocaleString()}</span>
                 <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/students/${student.id}`}>View</Link>
+                    <CustomLink href={`/dashboard/students/${student.id}`}>View</CustomLink>
                 </Button>
               </div>
             </div>

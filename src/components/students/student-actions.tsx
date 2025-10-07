@@ -179,6 +179,7 @@ export default function StudentActions({ student, onActionComplete }: { student?
           description: `${formData.get('name')} has been successfully ${student ? 'updated' : 'added'}.`,
         });
         setOpen(false);
+        router.refresh()
         onActionComplete?.();
     }
   };
@@ -195,6 +196,7 @@ export default function StudentActions({ student, onActionComplete }: { student?
             title: "Status Updated",
             description: `${student.name} is now ${newStatus}.`,
         });
+        router.refresh()
         onActionComplete?.();
     }
   }

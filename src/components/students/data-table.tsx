@@ -38,6 +38,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [globalFilter, setGlobalFilter] = React.useState('')
   const router = useRouter();
 
   const table = useReactTable({
@@ -48,10 +49,12 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
       columnFilters,
+      globalFilter,
     },
   })
 
@@ -63,14 +66,14 @@ export function DataTable<TData, TValue>({
   return (
     <div>
         <div className="flex items-center justify-between py-4">
-            <Input
-            placeholder="Filter by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-                table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-            />
+             <Input
+                placeholder="Search by name or phone..."
+                value={globalFilter ?? ''}
+                onChange={(event) =>
+                    setGlobalFilter(event.target.value)
+                }
+                className="max-w-sm"
+                />
             <StudentActions />
         </div>
         <div className="rounded-md border">
