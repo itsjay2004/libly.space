@@ -2,7 +2,6 @@
 'use client';
 
 import { ReactNode, useEffect } from "react";
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
@@ -27,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useTheme } from "next-themes";
 import { createClient } from "@/lib/supabase/client";
+import { CustomLink } from "@/components/ui/custom-link";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
                <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <CustomLink href={item.href}>
                   <SidebarMenuButton 
                     isActive={pathname === item.href} 
                     tooltip={item.label}
@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     {item.icon}
                     {item.label}
                   </SidebarMenuButton>
-                </Link>
+                </CustomLink>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -130,10 +130,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/settings">
+                        <CustomLink href="/dashboard/settings">
                             <Settings className="mr-2 h-4 w-4" />
                             <span>Settings</span>
-                        </Link>
+                        </CustomLink>
                     </DropdownMenuItem>
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>

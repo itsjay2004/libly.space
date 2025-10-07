@@ -1,33 +1,41 @@
-"use client"
+'use client'
 
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
 import { FormEvent, useState } from 'react';
+import { CustomLink } from '@/components/ui/custom-link';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
   const handleResetPassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     setMessage(null);
     setError(null);
 
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
 
-    if (authError) {
-      setError(authError.message);
-      console.error(authError);
-    } else {
-      setMessage('Check your email you will receive a password reset link!');
+      if (authError) {
+        setError(authError.message);
+      } else {
+        setMessage('Check your email you will receive a password reset link!');
+      }
+    } catch (err) {
+        setError('An unexpected error occurred.');
+        console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,10 +60,11 @@ export default function ForgotPasswordPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Reset Password
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Sending reset link...' : 'Reset Password'}
               </Button>
             </div>
           </form>
@@ -63,9 +72,9 @@ export default function ForgotPasswordPage() {
           {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4 text-center text-sm">
             Remember your password?{' '}
-            <Link href="/login" className="underline">
+            <CustomLink href="/login" className="underline">
               Login
-            </Link>
+            </CustomLink>
           </div>
         </CardContent>
       </Card>

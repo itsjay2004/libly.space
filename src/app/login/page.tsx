@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -7,27 +7,37 @@ import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import { FormEvent, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
+import { CustomLink } from '@/components/ui/custom-link'
+import NProgress from 'nprogress';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError(null) // Clear previous errors
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (!authError) {
-      router.push('/dashboard')
-    } else {
-      setError(authError.message)
-      console.error(authError)
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (!authError) {
+        NProgress.start();
+        router.push('/dashboard')
+      } else {
+        setError(authError.message)
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.')
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -51,14 +61,15 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="ml-auto inline-block text-sm underline">
+                <CustomLink href="/forgot-password" className="ml-auto inline-block text-sm underline">
                   Forgot your password?
-                </Link>
+                </CustomLink>
               </div>
               <Input
                 id="password"
@@ -66,18 +77,19 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-            <Button type="submit" className="w-full text-base hover:text-lg">
-              Login
+            <Button type="submit" className="w-full text-base hover:text-lg" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Don't have an account?{" "}
-            <Link href="/signup" className="underline">
+            <CustomLink href="/signup" className="underline">
               Sign up
-            </Link>
+            </CustomLink>
           </div>
         </CardContent>
       </Card>

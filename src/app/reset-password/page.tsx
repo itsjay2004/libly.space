@@ -1,39 +1,26 @@
-"use client"
+'use client'
 
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
-import { FormEvent, useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { CustomLink } from '@/components/ui/custom-link';
+import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import NProgress from 'nprogress';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const code = searchParams.get('code');
-
-  useEffect(() => {
-    if (!code) {
-      setError('No password reset code found in the URL. Please try resetting your password again.');
-    }
-  }, [code]);
 
   const handleResetPassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage(null);
-    setError(null);
-
-    if (!code) {
-      setError('Invalid or missing reset code.');
-      return;
-    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
@@ -44,17 +31,28 @@ export default function ResetPasswordPage() {
       setError('Password must be at least 6 characters long.');
       return;
     }
+    
+    setIsLoading(true);
+    setMessage(null);
+    setError(null);
 
-    const { error: resetError } = await supabase.auth.confirmAndSetPassword(code, password);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (resetError) {
-      setError(resetError.message);
-      console.error(resetError);
-    } else {
-      setMessage('Your password has been reset successfully! Redirecting to login...');
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
+      if (updateError) {
+        setError(updateError.message);
+      } else {
+        setMessage('Your password has been reset successfully! Redirecting to login...');
+        setTimeout(() => {
+          NProgress.start();
+          router.push('/login');
+        }, 3000);
+      }
+    } catch (err) {
+        setError('An unexpected error occurred.');
+        console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -78,6 +76,7 @@ export default function ResetPasswordPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -88,18 +87,20 @@ export default function ResetPasswordPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Set Password
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Setting Password...' : 'Set Password'}
               </Button>
             </div>
           </form>
           {message && <p className="mt-4 text-center text-sm text-green-500">{message}</p>}
-          {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}<div className="mt-4 text-center text-sm">
-            <Link href="/login" className="underline">
+          {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
+          <div className="mt-4 text-center text-sm">
+            <CustomLink href="/login" className="underline">
               Back to Login
-            </Link>
+            </CustomLink>
           </div>
         </CardContent>
       </Card>
