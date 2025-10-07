@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Student, Shift } from "@/lib/types";
 import { User } from "@supabase/supabase-js";
 import { checkOverlap } from '@/lib/time-utils';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SeatManagementPage() {
   const supabase = createClient();
@@ -264,7 +265,26 @@ export default function SeatManagementPage() {
 
 
   if (loading) {
-    return <p>Loading seat information...</p>
+    return (
+      <div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <Skeleton className="h-10 w-full sm:w-[180px]" />
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle><Skeleton className="h-6 w-32" /></CardTitle>
+            <CardDescription><Skeleton className="h-4 w-48" /></CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (!libraryId) {

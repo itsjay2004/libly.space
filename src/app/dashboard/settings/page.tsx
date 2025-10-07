@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@supabase/supabase-js';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
   const supabase = createClient();
@@ -133,7 +134,48 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-      return <p>Loading settings...</p>;
+      return (
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle><Skeleton className="h-6 w-48" /></CardTitle>
+                <CardDescription><Skeleton className="h-4 w-64" /></CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2 max-w-sm">
+                  <Label htmlFor="total-seats"><Skeleton className="h-4 w-24" /></Label>
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle><Skeleton className="h-6 w-48" /></CardTitle>
+                <CardDescription><Skeleton className="h-4 w-64" /></CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-36" />
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
+              <Skeleton className="h-10 w-24" />
+            </div>
+          </div>
+        </div>
+      );
   }
 
   return (

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Student } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation'; // Import useRouter
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientAddPaymentFormForPaymentsPage({ libraryId }: { libraryId: string }) {
   const supabase = createClient();
@@ -41,7 +42,7 @@ export default function ClientAddPaymentFormForPaymentsPage({ libraryId }: { lib
   };
 
   if (loading) {
-    return <p>Loading students...</p>;
+    return <Skeleton className="h-64 w-full" />;
   }
 
   return (

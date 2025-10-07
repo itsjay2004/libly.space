@@ -12,6 +12,7 @@ import ClientAddPaymentForm from '@/components/payments/client-add-payment-form'
 import { startOfMonth, endOfMonth, differenceInDays, getDaysInMonth, addMonths, isSameMonth } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/use-user';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -73,7 +74,80 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   }, [user, userLoading, studentId, supabase, refreshTrigger]); // Add refreshTrigger to dependencies
 
   if (userLoading || loadingStudent) {
-    return <p>Loading student profile...</p>;
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-end">
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-24 w-24 rounded-full" />
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-6 w-20 mt-2" />
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle><Skeleton className="h-6 w-32" /></CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <Skeleton className="h-8 w-32 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+            <CardDescription><Skeleton className="h-4 w-56" /></CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center p-2 border-b">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="flex justify-between items-center p-2 border-b">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                </div>
+                <div className="flex justify-between items-center p-2 border-b">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-16" />
+                </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (userError || fetchError) {

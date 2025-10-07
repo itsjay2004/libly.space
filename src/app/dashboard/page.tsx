@@ -7,8 +7,10 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Suspense } from 'react';
+import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
 
-export default async function DashboardPage() {
+async function DashboardData() {
   const cookieStore = cookies();
   const supabase = createClient();
 
@@ -149,5 +151,13 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardData />
+    </Suspense>
   );
 }

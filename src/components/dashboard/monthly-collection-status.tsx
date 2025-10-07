@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton";
 import { format, getMonth, getYear, startOfMonth } from "date-fns"
 import {
   PolarGrid,
@@ -140,7 +141,17 @@ export default function MonthlyCollectionStatus() {
   }, [user, userLoading, supabase]);
 
   if (userLoading || loading) {
-    return <p>Loading collection status...</p>;
+    return (
+        <Card>
+            <CardHeader className="items-center pb-4">
+                <CardTitle>Monthly Collection Status</CardTitle>
+                <CardDescription>Overview of collected vs. expected fees for the current year.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center p-0 h-[250px] w-full">
+                <Skeleton className="h-full w-full" />
+            </CardContent>
+        </Card>
+    );
   }
 
   if (userError) {

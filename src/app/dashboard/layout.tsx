@@ -1,6 +1,7 @@
-"use client";
 
-import { ReactNode, useEffect, useState } from "react";
+'use client';
+
+import { ReactNode, useEffect } from "react";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -25,7 +26,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useTheme } from "next-themes";
-import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -58,14 +58,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (pathname.startsWith('/dashboard/students/') && pathname !== '/dashboard/students') {
       currentPage = { href: pathname, label: "Student Profile", icon: <Users />, title: "Student Profile", description: "Detailed information about the student."}
-  }
-
-  if (isLoading || !user) {
-    return (
-        <div className="flex items-center justify-center h-screen">
-            <p>Loading...</p>
-        </div>
-    )
   }
 
   return (

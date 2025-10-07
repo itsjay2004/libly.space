@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import type { Student } from "@/lib/types";
@@ -120,10 +121,15 @@ export default function StudentLookup() {
             onValueChange={setSearchTerm}
           />
           <CommandList>
-            {userLoading && <p className="p-2 text-sm text-center text-muted-foreground">Loading user data...</p>}
-            {!user && !userLoading && <p className="p-2 text-sm text-center text-destructive">Please log in to search for students.</p>}
+            {(userLoading || (loading && searchTerm.trim() !== '')) && (
+                <div className="p-2 space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                </div>
+            )}
             
-            {loading && searchTerm.trim() !== '' && <p className="p-2 text-sm text-center text-muted-foreground">Searching...</p>}
+            {!user && !userLoading && <p className="p-2 text-sm text-center text-destructive">Please log in to search for students.</p>}
             {error && <p className="p-2 text-sm text-center text-destructive">Error: {error}</p>}
             
             {(!loading && !error && students.length === 0 && searchTerm.trim() === '' && user && !userLoading) && <CommandEmpty>Start typing to search for students.</CommandEmpty>}
