@@ -9,6 +9,7 @@ import { CustomLink } from '@/components/ui/custom-link'
 import { Button } from '@/components/ui/button';
 import { Suspense } from 'react';
 import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
+import { startOfMonth, endOfMonth, differenceInDays, getDaysInMonth, addMonths, isSameMonth } from 'date-fns';
 
 async function DashboardData() {
   const cookieStore = cookies();
@@ -76,6 +77,21 @@ async function DashboardData() {
   const libraryId = libraryData.id;
   const totalSeats = libraryData.total_seats;
 
+  // Fetch shifts for the current library to calculate total seat slots
+    const { data: shiftsData, error: shiftsError } = await supabase
+    .from('shifts')
+    .select('id')
+    .eq('library_id', libraryId);
+
+  if (shiftsError) {
+    console.error('Error fetching shifts data:', shiftsError);
+    return <p>Error loading shifts data.</p>;
+  }
+  
+  const numberOfShifts = shiftsData?.length || 0;
+  const totalSeatSlots = totalSeats * numberOfShifts;
+
+
   // Fetch students for the current library
   const { data: studentsData, error: studentsError } = await supabase
     .from('students')
@@ -84,7 +100,10 @@ async function DashboardData() {
       name,
       status,
       seat_number,
-      payments ( amount, due_date, status )
+      join_date,
+      shift_id,
+      shifts ( fee ),
+      payments ( amount )
     `)
     .eq('library_id', libraryId);
 
@@ -93,20 +112,56 @@ async function DashboardData() {
     return <p>Error loading students data.</p>;
   }
 
+  const studentsWithCalculatedDues = studentsData
+    ? studentsData.map(student => {
+        const studentPayments = student.payments || [];
+        const totalPaid = studentPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+        let totalExpectedFee = 0;
+        let due = 0;
+
+        if (student.status === 'active' && student.shift_id && student.shifts?.fee !== undefined) {
+          const monthlyFee = student.shifts.fee;
+          const studentJoinDate = new Date(student.join_date);
+          const today = new Date();
+
+          const joinMonthStart = startOfMonth(studentJoinDate);
+
+          if (isSameMonth(studentJoinDate, today)) {
+            const daysInJoinMonth = getDaysInMonth(studentJoinDate);
+            const activeDaysThisMonth = differenceInDays(today, studentJoinDate) + 1;
+            totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysThisMonth;
+          } else {
+            const joinMonthEnd = endOfMonth(studentJoinDate);
+            const daysInJoinMonth = getDaysInMonth(studentJoinDate);
+            const activeDaysInJoiningMonth = differenceInDays(joinMonthEnd, studentJoinDate) + 1;
+            totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysInJoiningMonth;
+
+            let currentMonthIterator = addMonths(joinMonthStart, 1);
+            while (currentMonthIterator < startOfMonth(today)) {
+              totalExpectedFee += monthlyFee;
+              currentMonthIterator = addMonths(currentMonthIterator, 1);
+            }
+
+            const daysInCurrentMonth = getDaysInMonth(today);
+            const activeDaysInCurrentMonth = differenceInDays(today, startOfMonth(today)) + 1;
+            totalExpectedFee += (monthlyFee / daysInCurrentMonth) * activeDaysInCurrentMonth;
+          }
+          
+          due = totalExpectedFee - totalPaid;
+        }
+
+        return {
+          ...student,
+          calculatedDue: due > 0 ? due : 0,
+        };
+      })
+    : [];
+
   const activeStudents = studentsData?.filter(s => s.status === 'active').length || 0;
-  const studentsWithDues = studentsData?.filter(s => 
-    s.payments && s.payments.some(p => p.status === 'due')
-  ).length || 0;
-
-  const totalDues = studentsData?.reduce((acc, student) => {
-    const studentDues = student.payments?.reduce((paymentAcc, payment) => {
-      return payment.status === 'due' ? paymentAcc + (payment.amount || 0) : paymentAcc;
-    }, 0) || 0;
-    return acc + studentDues;
-  }, 0) || 0;
-
+  const studentsWithDues = studentsWithCalculatedDues.filter(s => s.calculatedDue > 0).length;
+  const totalDues = studentsWithCalculatedDues.reduce((acc, student) => acc + student.calculatedDue, 0);
   const totalOccupiedSeats = studentsData?.filter(s => s.seat_number !== null).length || 0;
-  const seatsAvailable = totalSeats - totalOccupiedSeats;
+  const seatsAvailable = totalSeatSlots - totalOccupiedSeats;
 
   return (
     <div className="flex flex-col gap-8">
@@ -133,7 +188,7 @@ async function DashboardData() {
           title="Seats Available" 
           value={seatsAvailable.toString()} 
           icon={<PiggyBank className="h-6 w-6 text-green-500" />} 
-          description={`Out of ${totalSeats} total seats`}
+          description={`Out of ${totalSeatSlots} total slots`}
         />
       </div>
 

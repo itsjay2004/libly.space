@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
              <h1 className="text-xl font-semibold font-headline text-foreground">libly.space</h1>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="ml-3 mt-1">
           <SidebarMenu>
             {menuItems.map((item) => (
                <SidebarMenuItem key={item.href}>
@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                           </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>
-                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer hover:bg-red-300 dark:hover:bg-red-300">
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
                     </DropdownMenuItem>
@@ -162,7 +162,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-gray-800">
+            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-gray-200">
                 <Bell className="h-5 w-5" />
             </Button>
           </div>

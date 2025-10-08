@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -17,20 +17,23 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [libraryId, setLibraryId] = useState<string | null>(null);
+  const [libraryName, setLibraryName] = useState('');
   const [totalSeats, setTotalSeats] = useState(0);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [shiftsToDelete, setShiftsToDelete] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async (currentUser: User) => {
     setLoading(true);
     const { data: libraryData, error: libraryError } = await supabase
       .from('libraries')
-      .select('id, total_seats')
+      .select('id, name, total_seats')
       .eq('owner_id', currentUser.id)
       .single();
 
     if (libraryData) {
       setLibraryId(libraryData.id);
+      setLibraryName(libraryData.name || '');
       setTotalSeats(libraryData.total_seats);
 
       const { data: shiftsData, error: shiftsError } = await supabase
@@ -74,6 +77,10 @@ export default function SettingsPage() {
   };
 
   const removeShift = (index: number) => {
+    const shiftToRemove = shifts[index];
+    if (shiftToRemove.id) {
+      setShiftsToDelete([...shiftsToDelete, shiftToRemove.id]);
+    }
     const newShifts = shifts.filter((_, i) => i !== index);
     setShifts(newShifts);
   };
@@ -86,10 +93,22 @@ export default function SettingsPage() {
 
     let currentLibraryId = libraryId;
 
+    // First, update the profiles table with the library name
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ library_name: libraryName })
+        .eq('id', user.id);
+
+    if (profileError) {
+        toast({ title: "Error updating profile", description: profileError.message, variant: "destructive" });
+        return;
+    }
+
+    // Now, handle the libraries table
     if (!currentLibraryId) {
         const { data, error } = await supabase
             .from('libraries')
-            .insert({ owner_id: user.id, name: `${user.email}'s Library`, total_seats: totalSeats })
+            .insert({ owner_id: user.id, name: libraryName, total_seats: totalSeats })
             .select('id')
             .single();
 
@@ -100,11 +119,21 @@ export default function SettingsPage() {
         currentLibraryId = data.id;
         setLibraryId(currentLibraryId);
     } else {
-        const { error } = await supabase.from('libraries').update({ total_seats: totalSeats }).eq('id', currentLibraryId);
+        const { error } = await supabase.from('libraries').update({ name: libraryName, total_seats: totalSeats }).eq('id', currentLibraryId);
         if (error) {
             toast({ title: "Error updating library", description: error.message, variant: "destructive" });
             return;
         }
+    }
+
+    // Delete shifts marked for deletion
+    if (shiftsToDelete.length > 0) {
+        const { error: deleteError } = await supabase.from('shifts').delete().in('id', shiftsToDelete);
+        if (deleteError) {
+            toast({ title: "Error deleting shifts", description: deleteError.message, variant: "destructive" });
+            return;
+        }
+        setShiftsToDelete([]);
     }
     
     const shiftsToInsert = shifts.filter(s => !s.id).map(s => ({...s, library_id: currentLibraryId}));
@@ -143,9 +172,15 @@ export default function SettingsPage() {
                 <CardDescription><Skeleton className="h-4 w-64" /></CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-2 max-w-sm">
-                  <Label htmlFor="total-seats"><Skeleton className="h-4 w-24" /></Label>
-                  <Skeleton className="h-10 w-full" />
+                <div className="grid gap-4">
+                    <div className="grid gap-2 max-w-sm">
+                      <Label htmlFor="library-name"><Skeleton className="h-4 w-24" /></Label>
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="grid gap-2 max-w-sm">
+                      <Label htmlFor="total-seats"><Skeleton className="h-4 w-24" /></Label>
+                      <Skeleton className="h-10 w-full" />
+                    </div>
                 </div>
               </CardContent>
             </Card>
@@ -184,17 +219,28 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>General Configuration</CardTitle>
-            <CardDescription>Set the total number of seats in your library.</CardDescription>
+            <CardDescription>Set the name and total number of seats in your library.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2 max-w-sm">
-              <Label htmlFor="total-seats">Total Seats</Label>
-              <Input
-                id="total-seats"
-                type="number"
-                value={totalSeats}
-                onChange={(e) => setTotalSeats(Number(e.target.value))}
-              />
+            <div className="grid gap-4">
+              <div className="grid gap-2 max-w-sm">
+                <Label htmlFor="library-name">Library Name</Label>
+                <Input
+                  id="library-name"
+                  type="text"
+                  value={libraryName}
+                  onChange={(e) => setLibraryName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2 max-w-sm">
+                <Label htmlFor="total-seats">Total Seats</Label>
+                <Input
+                  id="total-seats"
+                  type="number"
+                  value={totalSeats}
+                  onChange={(e) => setTotalSeats(Number(e.target.value))}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

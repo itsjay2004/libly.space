@@ -215,9 +215,10 @@ export default function SeatManagementPage() {
               This seat is currently assigned to {studentForSelectedSeat.name} for the {studentForSelectedSeat.shifts?.name} shift.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-1">
               <p><strong>Student:</strong> {studentForSelectedSeat.name}</p>
               <p><strong>Phone:</strong> {studentForSelectedSeat.phone}</p>
+               <p><strong>Shift:</strong> {studentForSelectedSeat.shifts?.name}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Close</Button>
