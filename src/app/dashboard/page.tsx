@@ -5,7 +5,7 @@ import { Users, UserX, PiggyBank, CircleDollarSign } from 'lucide-react';
 import StudentLookup from '@/components/dashboard/student-lookup';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
+import { CustomLink } from '@/components/ui/custom-link'
 import { Button } from '@/components/ui/button';
 import { Suspense } from 'react';
 import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
@@ -64,9 +64,9 @@ async function DashboardData() {
             </div>
             <div className="text-center p-8 border-2 border-dashed rounded-lg">
                 <h2 className="text-2xl font-semibold mb-2">Welcome to your Dashboard!</h2>
-                <p className="mb-4">It looks like you haven't set up your library yet. Create one to get started.</p>
+                <p className="mb-4">It looks like you haven't set up your library yet. Add shifts, students to get started.</p>
                 <Button asChild>
-                    <Link href="/dashboard/settings">Go to Settings</Link>
+                    <CustomLink href="/dashboard/library">Go to Settings</CustomLink>
                 </Button>
             </div>
         </div>

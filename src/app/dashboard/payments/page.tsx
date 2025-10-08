@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import PaymentsList from '@/components/payments/payments-list';
 import ClientAddPaymentFormForPaymentsPage from '@/components/payments/client-add-payment-form-for-payments-page';
+import DuesList from '@/components/payments/dues-list';
 
 export default async function PaymentsPage() {
   const cookieStore = cookies();
@@ -91,6 +92,7 @@ export default async function PaymentsPage() {
           </CardContent>
         </Card>
       </div>
+      <DuesList />
     </div>
   );
 }

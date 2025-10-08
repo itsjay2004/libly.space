@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
   Avatar,
@@ -87,40 +88,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             ))}
           </SidebarMenu>
         </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between h-20 px-4 border-b sm:px-8">
-          <div className="flex items-center gap-4">
-             <div className="md:hidden">
-                <SidebarTrigger />
-            </div>
-            <div>
-              {currentPage && (
-                <>
-                  <h1 className="text-xl font-bold tracking-tight">{currentPage.title}</h1>
-                  <p className="text-sm text-muted-foreground">{currentPage.description}</p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-gray-800">
-                <Bell className="h-5 w-5" />
-            </Button>
-             <DropdownMenu>
+        <SidebarFooter>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 p-1 pr-2 bg-gray-200 dark:bg-gray-800">
+                  <Button variant="ghost" className="w-full justify-start items-center gap-2 p-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
                         <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
-                       <div className="text-left hidden sm:block">
+                       <div className="text-left">
                         <p className="text-sm font-medium text-foreground">{user?.user_metadata?.full_name ?? 'Admin'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                       </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 mt-2" align="end" forceMount>
+                <DropdownMenuContent className="w-56 mb-2" align="end" forceMount side="top">
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                             <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name ?? 'Admin'}</p>
@@ -162,6 +144,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
           </DropdownMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex items-center justify-between h-20 px-4 border-b sm:px-8">
+          <div className="flex items-center gap-4">
+             <div className="md:hidden">
+                <SidebarTrigger />
+            </div>
+            <div>
+              {currentPage && (
+                <>
+                  <h1 className="text-xl font-bold tracking-tight">{currentPage.title}</h1>
+                  <p className="text-sm text-muted-foreground">{currentPage.description}</p>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-gray-800">
+                <Bell className="h-5 w-5" />
+            </Button>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
