@@ -59,6 +59,7 @@ create table students (
   name text not null,
   phone text not null,
   email text,
+  id_number text,
   address text,
   shift_id uuid references public.shifts (id),
   seat_number integer,

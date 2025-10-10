@@ -161,15 +161,17 @@ export default function StudentActions({ student, onActionComplete }: { student?
 
     const studentData = {
         name: formData.get('name') as string,
-        email: formData.get('email') as string || null, // Make email optional
+        // email: formData.get('email') as string || null, // Make email optional
         phone: formData.get('phone') as string,
         shift_id: shiftId,
         seat_number: seatNumber,
+        id_number: formData.get('id_number') as string || null,
+        join_date: formData.get('join_date') ? new Date(formData.get('join_date') as string).toISOString() : new Date().toISOString(),
     };
 
     const { error } = student
         ? await supabase.from('students').update(studentData).eq('id', student.id)
-        : await supabase.from('students').insert({ ...studentData, library_id: libraryId, status: 'active', join_date: new Date().toISOString() });
+        : await supabase.from('students').insert({ ...studentData, library_id: libraryId, status: 'active' });
 
     if (error) {
         toast({ title: "Error saving student", description: error.message, variant: "destructive" });
@@ -220,7 +222,7 @@ export default function StudentActions({ student, onActionComplete }: { student?
     } else {
       toast({
         title: "Student Deleted",
-        description: `${student.name} has been successfully deleted.`,
+        description: `${student.name} has been successfully deleted.`
       });
       setIsDeleteDialogOpen(false);
       router.push('/dashboard/students');
@@ -242,15 +244,15 @@ export default function StudentActions({ student, onActionComplete }: { student?
           <Input id="name" name="name" defaultValue={student?.name} className="col-span-3" required />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="email" className="text-right">Email (Optional)</Label>
-          <Input id="email" name="email" type="email" defaultValue={student?.email} className="col-span-3" />
-        </div>
-        <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="phone" className="text-right">Phone</Label>
           <Input id="phone" name="phone" type="tel" defaultValue={student?.phone} className="col-span-3" required pattern="[0-9]{10}" title="Phone number must be 10 digits" />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="shift_id" className="text-right">Shift</Label>
+          <Label htmlFor="id_number" className="text-right">ID Number </Label>
+          <Input id="id_number" name="id_number" defaultValue={student?.id_number} className="col-span-3" />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="shift_id" className="text-right">Shift*</Label>
           <Select name="shift_id" defaultValue={student?.shift_id ?? undefined}>
             <SelectTrigger className="col-span-3">
               <SelectValue placeholder="Select a shift" />
@@ -263,8 +265,12 @@ export default function StudentActions({ student, onActionComplete }: { student?
           </Select>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="seat_number" className="text-right">Seat No. (Optional)</Label>
+          <Label htmlFor="seat_number" className="text-right">Seat No.</Label>
           <Input id="seat_number" name="seat_number" type="number" defaultValue={student?.seat_number ?? ''} className="col-span-3" />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="join_date" className="text-right">Join Date</Label>
+          <Input id="join_date" name="join_date" type="date" defaultValue={student?.join_date ? new Date(student.join_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} className="col-span-3" />
         </div>
       </div>
       <DialogFooter>
@@ -295,7 +301,7 @@ export default function StudentActions({ student, onActionComplete }: { student?
                       <Edit className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleStatusChange}>
-                      {student.status === 'active' ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                      {student.status === 'active' ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" /> }
                       <span>{student.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

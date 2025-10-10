@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const [libraryName, setLibraryName] = useState('');
   const [totalSeats, setTotalSeats] = useState(0);
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [shiftsToDelete, setShiftsToDelete] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async (currentUser: User) => {
@@ -39,7 +38,8 @@ export default function SettingsPage() {
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('shifts')
         .select('*')
-        .eq('library_id', libraryData.id);
+        .eq('library_id', libraryData.id)
+        .order('start_time', { ascending: true }); // Keep shifts in a consistent order
 
       if (shiftsData) {
         setShifts(shiftsData.map(s => ({ ...s, fee: s.fee || 0 })));
@@ -73,16 +73,39 @@ export default function SettingsPage() {
   };
   
   const addShift = () => {
-    setShifts([...shifts, { library_id: libraryId || '', name: '', start_time: '', end_time: '', fee: 0 }]);
+    // Use a temporary unique ID for the key prop
+    const newShift = { library_id: libraryId || '', name: '', start_time: '', end_time: '', fee: 0, id: `new-${Date.now()}` };
+    setShifts([...shifts, newShift as Shift]);
   };
 
-  const removeShift = (index: number) => {
+  const removeShift = async (index: number) => {
     const shiftToRemove = shifts[index];
-    if (shiftToRemove.id) {
-      setShiftsToDelete([...shiftsToDelete, shiftToRemove.id]);
+
+    // If the shift ID is a string like 'new-...', it's a new, unsaved shift.
+    if (typeof shiftToRemove.id === 'string' && shiftToRemove.id.startsWith('new-')) {
+      const newShifts = shifts.filter((_, i) => i !== index);
+      setShifts(newShifts);
+      return; // Nothing to do in the database
     }
-    const newShifts = shifts.filter((_, i) => i !== index);
-    setShifts(newShifts);
+
+    // If it has a numeric ID, it exists in the database.
+    const { error } = await supabase.from('shifts').delete().eq('id', shiftToRemove.id);
+
+    if (error) {
+      toast({
+        title: "Error Deleting Shift",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Shift Deleted",
+        description: "The shift has been successfully removed.",
+      });
+      // On successful DB deletion, remove it from the UI.
+      const newShifts = shifts.filter((_, i) => i !== index);
+      setShifts(newShifts);
+    }
   };
   
   const handleSave = async () => {
@@ -90,10 +113,10 @@ export default function SettingsPage() {
         toast({ title: "You must be logged in to save settings.", variant: "destructive" });
         return;
     }
+    
+    setLoading(true);
 
-    let currentLibraryId = libraryId;
-
-    // First, update the profiles table with the library name
+    // 1. Update profile
     const { error: profileError } = await supabase
         .from('profiles')
         .update({ library_name: libraryName })
@@ -101,10 +124,12 @@ export default function SettingsPage() {
 
     if (profileError) {
         toast({ title: "Error updating profile", description: profileError.message, variant: "destructive" });
+        setLoading(false);
         return;
     }
 
-    // Now, handle the libraries table
+    // 2. Create or update the library
+    let currentLibraryId = libraryId;
     if (!currentLibraryId) {
         const { data, error } = await supabase
             .from('libraries')
@@ -114,35 +139,31 @@ export default function SettingsPage() {
 
         if (error || !data) {
             toast({ title: "Error creating library", description: error?.message, variant: "destructive" });
+            setLoading(false);
             return;
         }
         currentLibraryId = data.id;
-        setLibraryId(currentLibraryId);
     } else {
         const { error } = await supabase.from('libraries').update({ name: libraryName, total_seats: totalSeats }).eq('id', currentLibraryId);
         if (error) {
             toast({ title: "Error updating library", description: error.message, variant: "destructive" });
+            setLoading(false);
             return;
         }
-    }
-
-    // Delete shifts marked for deletion
-    if (shiftsToDelete.length > 0) {
-        const { error: deleteError } = await supabase.from('shifts').delete().in('id', shiftsToDelete);
-        if (deleteError) {
-            toast({ title: "Error deleting shifts", description: deleteError.message, variant: "destructive" });
-            return;
-        }
-        setShiftsToDelete([]);
     }
     
-    const shiftsToInsert = shifts.filter(s => !s.id).map(s => ({...s, library_id: currentLibraryId}));
-    const shiftsToUpdate = shifts.filter(s => s.id);
+    // 3. Separate new shifts from existing ones and save them.
+    const shiftsToInsert = shifts
+      .filter(s => typeof s.id === 'string' && s.id.startsWith('new-'))
+      .map(({ id, ...rest }) => ({ ...rest, library_id: currentLibraryId! })); // Exclude temporary 'id' field
+
+    const shiftsToUpdate = shifts.filter(s => typeof s.id === 'number');
 
     if (shiftsToInsert.length > 0) {
         const { error: insertError } = await supabase.from('shifts').insert(shiftsToInsert);
         if (insertError) {
             toast({ title: "Error saving new shifts", description: insertError.message, variant: "destructive" });
+            setLoading(false);
             return;
         }
     }
@@ -151,14 +172,17 @@ export default function SettingsPage() {
         const { error: updateError } = await supabase.from('shifts').upsert(shiftsToUpdate);
         if (updateError) {
             toast({ title: "Error updating shifts", description: updateError.message, variant: "destructive" });
+            setLoading(false);
             return;
         }
     }
 
     toast({
         title: "Settings Saved",
-        description: "Your library settings have been updated.",
+        description: "Your library settings have been successfully updated.",
     });
+
+    // 4. Refetch all data to ensure UI is perfectly in sync.
     if (user) fetchSettings(user);
   }
 
@@ -252,7 +276,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {shifts.map((shift, index) => (
-              <div key={shift.id || index} className="space-y-4 p-4 border rounded-lg relative">
+              <div key={shift.id} className="space-y-4 p-4 border rounded-lg relative">
                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeShift(index)}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
@@ -285,7 +309,7 @@ export default function SettingsPage() {
         </Card>
         
         <div className="flex justify-end">
-            <Button onClick={handleSave}>Save Settings</Button>
+            <Button onClick={handleSave} disabled={loading}>Save Settings</Button>
         </div>
       </div>
     </div>

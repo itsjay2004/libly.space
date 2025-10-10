@@ -224,7 +224,7 @@ export default function DuesList() {
         </Table>
         <div className='flex justify-between items-center mt-4'>
           <Button onClick={() => setPage(p => p - 1)} disabled={page === 1}>Previous</Button>
-          <span className='bg-zinc-700 px-2 py-1 rounded-md text-sm'>Page {page}</span>
+          <span className='bg-zinc-300 dark:bg-zinc-700 px-2 py-1 rounded-md text-sm'>Page {page}</span>
           <Button onClick={() => setPage(p => p + 1)} disabled={!hasMore}>Next</Button>
         </div>
       </CardContent>
