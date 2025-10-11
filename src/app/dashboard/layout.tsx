@@ -162,7 +162,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-gray-200">
+            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-zinc-800">
                 <Bell className="h-5 w-5" />
             </Button>
           </div>

@@ -1,5 +1,6 @@
-"use client";
+'use client';
 
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { notFound, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -13,6 +14,14 @@ import { startOfMonth, endOfMonth, differenceInDays, getDaysInMonth, addMonths, 
 import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/use-user';
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator
+} from '@/components/ui/breadcrumb';
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -23,9 +32,9 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [libraryId, setLibraryId] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // New state variable for refresh
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const supabase = createClient(); 
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -71,91 +80,100 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
     };
 
     fetchStudentData();
-  }, [user, userLoading, studentId, supabase, refreshTrigger]); // Add refreshTrigger to dependencies
+  }, [user, userLoading, studentId, supabase, refreshTrigger]);
 
   if (userLoading || loadingStudent) {
     return (
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-end">
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-24 w-24 rounded-full" />
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-6 w-20 mt-2" />
-          </div>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle><Skeleton className="h-6 w-32" /></CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <Skeleton className="h-8 w-32 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
-            <CardDescription><Skeleton className="h-4 w-56" /></CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-16" />
+        <div className="flex flex-col gap-6">
+             <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                         <BreadcrumbLink href="/dashboard/students">Students</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>Details</BreadcrumbPage>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+            <div className="flex items-center justify-end">
+                <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+                <div className="md:col-span-1 flex flex-col gap-6">
+                    <Card>
+                        <CardContent className="pt-6 flex flex-col items-center text-center">
+                            <Skeleton className="h-24 w-24 rounded-full mb-4" />
+                            <Skeleton className="h-8 w-40 mb-2" />
+                            <Skeleton className="h-6 w-20" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-32" /></CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                        </CardContent>
+                    </Card>
                 </div>
-                <div className="flex justify-between items-center p-2 border-b">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
-                <div className="flex justify-between items-center p-2 border-b">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-16" />
+                <div className="md:col-span-2 flex flex-col gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <Skeleton className="h-12 w-1/2" />
+                             <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle><Skeleton className="h-6 w-40" /></CardTitle>
+                            <CardDescription><Skeleton className="h-4 w-56" /></CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center p-2 border-b">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-16" />
+                                </div>
+                                <div className="flex justify-between items-center p-2 border-b">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-16" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+        </div>
     );
-  }
+}
+
 
   if (userError || fetchError) {
-    return <p>Error: {userError || fetchError}</p>;
+    return <p className="text-center text-red-500">Error: {userError || fetchError}</p>;
   }
 
-  if (!user || !student) {
-    notFound(); 
+  if (!student) {
+    notFound();
   }
 
   const formattedJoinDate = new Intl.DateTimeFormat('en-US', {
@@ -170,23 +188,22 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   if (student.status === 'active' && student.shift_id && student.shifts?.fee !== undefined) {
     const monthlyFee = student.shifts.fee;
     const studentJoinDate = new Date(student.join_date);
-    const today = new Date(); 
+    const today = new Date();
 
     let totalExpectedFee = 0;
-
     const joinMonthStart = startOfMonth(studentJoinDate);
     const joinMonthEnd = endOfMonth(studentJoinDate);
 
     if (isSameMonth(studentJoinDate, today)) {
       const daysInJoinMonth = getDaysInMonth(studentJoinDate);
-      const activeDaysThisMonth = differenceInDays(today, studentJoinDate) + 1; 
+      const activeDaysThisMonth = differenceInDays(today, studentJoinDate) + 1;
       totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysThisMonth;
     } else {
       const daysInJoinMonth = getDaysInMonth(studentJoinDate);
       const activeDaysInJoiningMonth = differenceInDays(joinMonthEnd, studentJoinDate) + 1;
       totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysInJoiningMonth;
 
-      let currentMonthIterator = addMonths(joinMonthStart, 1); 
+      let currentMonthIterator = addMonths(joinMonthStart, 1);
       while (currentMonthIterator < startOfMonth(today)) {
         totalExpectedFee += monthlyFee;
         currentMonthIterator = addMonths(currentMonthIterator, 1);
@@ -196,92 +213,119 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
       const activeDaysInCurrentMonth = differenceInDays(today, startOfMonth(today)) + 1;
       totalExpectedFee += (monthlyFee / daysInCurrentMonth) * activeDaysInCurrentMonth;
     }
-    
+
     calculatedDue = totalExpectedFee - totalPaid;
   }
 
   const handlePaymentDeleted = () => {
-    router.refresh(); // Invalidate Next.js cache for the current route
-    setRefreshTrigger(prev => prev + 1); // Trigger client-side re-fetch
+    router.refresh();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-end">
-        <ClientStudentActions student={student} />
-      </div>
-
-      <div className="flex items-center gap-4">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
-          <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-3xl font-bold">{student.name}</h1>
-          <p className="text-muted-foreground">Student ID: {student.id.substring(0, 8)}</p>
-          <Badge variant={student.status === 'active' ? 'default' : 'destructive'} className={student.status === 'active' ? 'bg-green-500/80 text-white mt-2' : 'bg-red-500/80 text-white mt-2'}>
-            {student.status}
-          </Badge>
+       <div className="flex items-center justify-between">
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink href="/dashboard/students">Students</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>{student.name}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+            <ClientStudentActions student={student} />
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" /> {student.email}
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" /> {student.phone}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-8 md:grid-cols-3">
+            {/* Left Column */}
+            <div className="md:col-span-1 flex flex-col gap-6">
+                <Card>
+                    <CardContent className="pt-6 flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 mb-4">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
+                            <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <h2 className="text-2xl font-semibold">{student.name}</h2>
+                        <Badge variant={student.status === 'active' ? 'default' : 'destructive'} className={`mt-2 ${student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {student.status}
+                        </Badge>
+                    </CardContent>
+                </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Library Details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" /> Joined: {formattedJoinDate}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Contact Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                         <div className="flex items-center gap-3">
+                            <Mail className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">{student.email}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Phone className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">{student.phone}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Library Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                        <div className="flex items-center gap-3">
+                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">Joined: {formattedJoinDate}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Armchair className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">Seat No: {student.seat_number || 'N/A'}</span>
+                        </div>
+                         <div className="flex items-center gap-3">
+                            <p className='text-sm text-muted-foreground'>Shift: </p>
+                            <span className="text-sm">{student.shifts?.name || 'N/A'} {student.shifts?.start_time && student.shifts?.end_time ? `(${student.shifts.start_time} - ${student.shifts.end_time})` : ''}</span>
+                        </div>
+                         <div className="flex items-center gap-3">
+                             <p className='text-sm text-muted-foreground'>Shift Fee:</p>
+                             <span className="text-sm">{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(student.shifts?.fee || 0)}</span>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
-            <div className="flex items-center gap-2">
-              <Armchair className="h-4 w-4 text-muted-foreground" /> Seat No: {student.seat_number || 'N/A'}
-            </div>
-            <div className="flex items-center gap-2">
-              Shift: {student.shifts?.name || 'N/A'} {student.shifts?.start_time && student.shifts?.end_time ? `(${student.shifts.start_time} - ${student.shifts.end_time})` : ''}
-            </div>
-            <div className="flex items-center gap-2">
-              Shift Fee: {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(student.shifts?.fee || 0)}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <p className="text-2xl font-bold">
-              Total Due: {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(calculatedDue > 0 ? calculatedDue : 0)}
-            </p>
-            {libraryId && <ClientAddPaymentForm studentId={student.id} libraryId={libraryId} />} 
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment History</CardTitle>
-          <CardDescription>All recorded payments for {student.name}.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PaymentsList payments={student.payments || []} onPaymentDeleted={handlePaymentDeleted} />
-        </CardContent>
-      </Card>
+            {/* Right Column */}
+            <div className="md:col-span-2 flex flex-col gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Payment Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <div className='border-b pb-4'>
+                            <p className="text-sm text-muted-foreground mb-1">Total Due</p>
+                            <p className="text-3xl font-bold text-red-600">
+                                {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(calculatedDue > 0 ? calculatedDue : 0)}
+                            </p>
+                        </div>
+                        <div>
+                             {libraryId && <ClientAddPaymentForm studentId={student.id} libraryId={libraryId} />}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Payment History</CardTitle>
+                        <CardDescription>A complete record of all payments for {student.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <PaymentsList payments={student.payments || []} onPaymentDeleted={handlePaymentDeleted} />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
     </div>
   );
 }
