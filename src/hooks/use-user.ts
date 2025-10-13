@@ -36,6 +36,7 @@ export const useUser = (): UseUserResult => {
         .select('*')
         .eq('id', user.id)
         .single();
+  
 
       if (error) {
         setError(error.message);

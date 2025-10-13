@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PlanSelectorSheet } from './plan-selector-sheet';
 
 const FREE_PLAN_STUDENT_LIMIT = 50;
 
@@ -91,11 +92,21 @@ export default function SubscriptionDetails() {
               {isSubscribed ? 'Pro' : 'Free'}
             </Badge>
           </div>
-          <Button 
-            className={`${isSubscribed ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'} transition-colors rounded-md px-4 py-2`}
-          >
-            {isSubscribed ? 'Manage Billing' : 'Upgrade'}
-          </Button>
+          {isSubscribed ? (
+            <Button 
+                className="bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-md px-4 py-2"
+              >
+                Manage Billing
+            </Button>
+          ) : (
+            <PlanSelectorSheet>
+                <Button 
+                    className="bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-md px-4 py-2"
+                >
+                    Upgrade
+                </Button>
+            </PlanSelectorSheet>
+          )}
         </div>
         
         {loading ? (

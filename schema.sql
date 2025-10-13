@@ -4,7 +4,9 @@ create table profiles (
   full_name text,
   avatar_url text,
   library_name text,
-  phone text
+  phone text,
+  subscription_status TEXT DEFAULT 'free',
+  subscription_end_date TIMESTAMPTZ
 );
 -- Set up Row Level Security (RLS)
 -- See https://supabase.com/docs/guides/auth/row-level-security for more details.
@@ -135,3 +137,24 @@ create policy "Users can insert payments in their own library." on payments
   for insert with check (exists (select 1 from libraries where libraries.id = payments.library_id and libraries.owner_id = auth.uid()));
 create policy "Users can update payments in their own library." on payments
   for update using (exists (select 1 from libraries where libraries.id = payments.library_id and libraries.owner_id = auth.uid()));
+
+-- Create a table for subscriptions
+create table subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) not null,
+  razorpay_payment_id text,
+  razorpay_subscription_id text,
+  razorpay_signature text,
+  plan text not null,
+  status text not null,
+  start_date timestamptz not null,
+  end_date timestamptz not null,
+  created_at timestamptz default now()
+);
+-- Add RLS to subscriptions table
+alter table subscriptions
+  enable row level security;
+create policy "Users can view their own subscriptions." on subscriptions
+  for select using (auth.uid() = user_id);
+create policy "Users can insert their own subscriptions." on subscriptions
+  for insert with check (auth.uid() = user_id);
