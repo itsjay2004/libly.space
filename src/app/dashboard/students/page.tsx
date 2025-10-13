@@ -1,27 +1,71 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { columns } from '@/components/students/columns';
 import { DataTable } from '@/components/students/data-table';
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useUser } from '@/hooks/use-user';
+import { createClient } from '@/lib/supabase/client';
 
-export default async function StudentsPage() {
-  const cookieStore = cookies();
+export default function StudentsPage() {
+  const { 
+    user, 
+    isLoading,
+    isStudentLimitReached,
+    isSubscriptionExpired
+  } = useUser();
+  const [students, setStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [libraryExists, setLibraryExists] = useState(true);
   const supabase = createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (user) {
+        setLoadingStudents(true);
+        const { data: libraryData, error: libraryError } = await supabase
+          .from('libraries')
+          .select('id')
+          .eq('owner_id', user.id)
+          .single();
+
+        if (libraryError || !libraryData) {
+          setLibraryExists(false);
+          setLoadingStudents(false);
+          return;
+        }
+
+        setLibraryExists(true);
+        const { data, error } = await supabase
+          .from('students')
+          .select(`
+            *,
+            shifts ( * ),
+            payments ( amount, status )
+          `)
+          .eq('library_id', libraryData.id)
+          .order('join_date', { ascending: false });
+        
+        if (data) setStudents(data);
+        setLoadingStudents(false);
+      }
+    };
+    
+    if (user) {
+      fetchStudents();
+    }
+  }, [user, supabase]);
+
+  if (isLoading || loadingStudents) {
+    return <p>Loading...</p>;
+  }
 
   if (!user) {
     return <p>Please log in to view students.</p>;
   }
 
-  const { data: libraryData, error: libraryError } = await supabase
-    .from('libraries')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
-
-  if (libraryError || !libraryData) {
+  if (!libraryExists) {
     return (
       <div className="text-center p-8 border-2 border-dashed rounded-lg">
           <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
@@ -33,24 +77,16 @@ export default async function StudentsPage() {
     );
   }
 
-  const { data: students, error: studentsError } = await supabase
-    .from('students')
-    .select(`
-      *,
-      shifts ( * ),
-      payments ( amount, status )
-    `)
-    .eq('library_id', libraryData.id)
-    .order('join_date', { ascending: false });
-
-  if (studentsError) {
-    console.error('Error fetching students:', studentsError);
-    return <p>Error loading students: {studentsError.message}</p>;
-  }
+  const disableAddStudent = isStudentLimitReached || isSubscriptionExpired;
 
   return (
     <div className="flex flex-col gap-8">
       <div className="bg-card p-4 rounded-lg border">
+        <div className="flex justify-end mb-4">
+          <Button asChild disabled={disableAddStudent}>
+            <Link href="/dashboard/students/new">Add Student</Link>
+          </Button>
+        </div>
         <DataTable columns={columns} data={students || []} />
       </div>
     </div>

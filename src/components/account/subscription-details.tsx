@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/use-user';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,43 +8,20 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlanSelectorSheet } from './plan-selector-sheet';
 
+
 const FREE_PLAN_STUDENT_LIMIT = 50;
 
 export default function SubscriptionDetails() {
-  const { user, userDetails, isLoading: isUserLoading } = useUser();
-  const [studentCount, setStudentCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const fetchStudentCount = async () => {
-      if (!user || !userDetails?.library_id) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const { count, error } = await supabase
-        .from('students')
-        .select('* ', { count: 'exact', head: true })
-        .eq('library_id', userDetails.library_id);
-
-      if (error) {
-        console.error('Error fetching student count:', error);
-      } else {
-        setStudentCount(count || 0);
-      }
-      setLoading(false);
-    };
-
-    if (!isUserLoading) {
-        fetchStudentCount();
-    }
-  }, [user, userDetails, supabase, isUserLoading]);
+  const { userDetails, studentCount, isLoading: isUserLoading, fetchStudentCount, libId } = useUser();
 
   const isSubscribed = userDetails?.subscription_status === 'active';
   const isFreePlan = !isSubscribed;
   const usagePercentage = isFreePlan ? (studentCount / FREE_PLAN_STUDENT_LIMIT) * 100 : 0;
+
+
+  console.log("--====== libId", libId)
+  const count  = fetchStudentCount(libId)
+  console.log("------------------------",count)
 
   if (isUserLoading) {
     return (
@@ -109,16 +84,7 @@ export default function SubscriptionDetails() {
           )}
         </div>
         
-        {loading ? (
-            <div className="grid gap-3">
-                <Skeleton className="h-5 w-28" />
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-2 w-full rounded-full" />
-                    <Skeleton className="h-5 w-10" />
-                </div>
-                <Skeleton className="h-4 w-full" />
-            </div>
-        ) : isFreePlan && (
+        {isFreePlan && (
           <div className="grid gap-3">
             <h3 className="font-semibold text-gray-900">Student Usage</h3>
             <div className="flex items-center gap-4">
