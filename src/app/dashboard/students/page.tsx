@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { createClient } from '@/lib/supabase/client';
+import StudentActions from '@/components/students/student-actions';
+
 
 export default function StudentsPage() {
   const { 
     user, 
     isLoading,
-    isStudentLimitReached,
-    isSubscriptionExpired
   } = useUser();
   const [students, setStudents] = useState<any[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
@@ -77,15 +77,11 @@ export default function StudentsPage() {
     );
   }
 
-  const disableAddStudent = isStudentLimitReached || isSubscriptionExpired;
-
   return (
     <div className="flex flex-col gap-8">
-      <div className="bg-card p-4 rounded-lg border">
+      <div className="rounded-lg border bg-card p-4">
         <div className="flex justify-end mb-4">
-          <Button asChild disabled={disableAddStudent}>
-            <Link href="/dashboard/students/new">Add Student</Link>
-          </Button>
+          <StudentActions />
         </div>
         <DataTable columns={columns} data={students || []} />
       </div>

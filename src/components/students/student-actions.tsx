@@ -23,6 +23,8 @@ import { PlusCircle, Edit, Trash2, MoreHorizontal, Eye, UserCheck, UserX } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { User } from "@supabase/supabase-js";
 import { checkOverlap } from '@/lib/time-utils';
+import { useUser } from "@/hooks/use-user";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export default function StudentActions({ student, onActionComplete }: { student?: Student, onActionComplete?: () => void }) {
   const supabase = createClient();
@@ -32,7 +34,9 @@ export default function StudentActions({ student, onActionComplete }: { student?
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [libraryId, setLibraryId] = useState<string | null>(null);
-  const [shifts, setShifts] = useState<Shift[]>([]); 
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const { isStudentLimitReached, isSubscriptionExpired } = useUser();
+
 
   useEffect(() => {
     const getInitialData = async () => {
@@ -62,10 +66,23 @@ export default function StudentActions({ student, onActionComplete }: { student?
       }
     };
     getInitialData();
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!student && (isStudentLimitReached || isSubscriptionExpired)) {
+      toast({
+        title: "Cannot Add Student",
+        description: isStudentLimitReached
+          ? "You have reached your student limit. Please upgrade your plan."
+          : "Your subscription has expired. Please renew to add new students.",
+        variant: "destructive",
+      });
+      setOpen(false);
+      return;
+    }
+
     if (!libraryId) {
         toast({ title: "Error", description: "Could not find library.", variant: "destructive"});
         return;
@@ -333,13 +350,28 @@ export default function StudentActions({ student, onActionComplete }: { student?
     );
   }
 
+  const disableAddStudent = isStudentLimitReached || isSubscriptionExpired;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Student
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div style={{ display: 'inline-block', cursor: disableAddStudent ? 'not-allowed' : 'pointer' }}>
+              <DialogTrigger asChild>
+                <Button disabled={disableAddStudent}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Student
+                </Button>
+              </DialogTrigger>
+            </div>
+          </TooltipTrigger>
+          {disableAddStudent && (
+            <TooltipContent>
+              {isStudentLimitReached ? 'You have reached your student limit.' : 'Your subscription has expired.'}
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="sm:max-w-[425px]">
         {formContent}
       </DialogContent>

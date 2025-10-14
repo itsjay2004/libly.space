@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import StudentActions from "./student-actions"
 import type { Student } from "@/lib/types";
 
 interface DataTableProps<TData, TValue> {
@@ -81,7 +80,6 @@ export function DataTable<TData, TValue>({
                 }
                 className="max-w-sm"
                 />
-            <StudentActions />
         </div>
         <div className="rounded-md border">
             <Table>
