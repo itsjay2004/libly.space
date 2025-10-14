@@ -8,20 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlanSelectorSheet } from './plan-selector-sheet';
 
-
 const FREE_PLAN_STUDENT_LIMIT = 50;
 
 export default function SubscriptionDetails() {
-  const { userDetails, studentCount, isLoading: isUserLoading, fetchStudentCount, libId } = useUser();
+  const { userDetails, studentCount, isLoading: isUserLoading, isNearingStudentLimit, isStudentLimitReached } = useUser();
 
   const isSubscribed = userDetails?.subscription_status === 'active';
   const isFreePlan = !isSubscribed;
   const usagePercentage = isFreePlan ? (studentCount / FREE_PLAN_STUDENT_LIMIT) * 100 : 0;
-
-
-  console.log("--====== libId", libId)
-  const count  = fetchStudentCount(libId)
-  console.log("------------------------",count)
 
   if (isUserLoading) {
     return (
@@ -93,7 +87,13 @@ export default function SubscriptionDetails() {
             </div>
             <p className="text-sm text-gray-600">
               You have used {studentCount} of your {FREE_PLAN_STUDENT_LIMIT} student limit. 
-              Upgrade to Pro for unlimited students.
+              {isNearingStudentLimit && !isStudentLimitReached && (
+                <span className="text-yellow-600"> You are nearing your student limit.</span>
+              )}
+              {isStudentLimitReached && (
+                <span className="text-red-600"> You have reached your student limit.</span>
+              )}
+              {!isStudentLimitReached && ' Upgrade to Pro for unlimited students.'}
             </p>
           </div>
         )}
