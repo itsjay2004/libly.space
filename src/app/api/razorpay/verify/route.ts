@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
       const { data: user, error: userError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("subscription_end_date") // Select only necessary field
         .eq("id", user_id)
         .single();
 
@@ -34,20 +34,29 @@ export async function POST(req: Request) {
         throw userError;
       }
 
-      const subscription_end_date = new Date();
+      let baseDate = new Date();
+
+      // If user has an existing subscription that ends in the future, extend from that date
+      if (user.subscription_end_date) {
+        const existingEndDate = new Date(user.subscription_end_date);
+        if (existingEndDate > baseDate) {
+          baseDate = existingEndDate; // Extend from existing end date
+        }
+      }
+
+      const newSubscriptionEndDate = new Date(baseDate); // Clone baseDate to modify
+
       if (plan === "monthly") {
-        subscription_end_date.setMonth(subscription_end_date.getMonth() + 1);
-      } else if (plan === "yearly") {
-        subscription_end_date.setFullYear(
-          subscription_end_date.getFullYear() + 1
-        );
+        newSubscriptionEndDate.setMonth(newSubscriptionEndDate.getMonth() + 1);
+      } else if (plan === "threeMonth") {
+        newSubscriptionEndDate.setMonth(newSubscriptionEndDate.getMonth() + 3);
       }
 
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
           subscription_status: "active",
-          subscription_end_date: subscription_end_date.toISOString(),
+          subscription_end_date: newSubscriptionEndDate.toISOString(),
         })
         .eq("id", user_id);
 
@@ -65,8 +74,8 @@ export async function POST(req: Request) {
             razorpay_signature,
             plan,
             status: "active",
-            start_date: new Date().toISOString(),
-            end_date: subscription_end_date.toISOString(),
+            start_date: new Date().toISOString(), // Start date is always now for the record
+            end_date: newSubscriptionEndDate.toISOString(),
           },
         ]);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation'; // Import useRouter
 import { useUser } from '@/hooks/use-user';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,11 +12,16 @@ import { PlanSelectorSheet } from './plan-selector-sheet';
 const FREE_PLAN_STUDENT_LIMIT = 50;
 
 export default function SubscriptionDetails() {
+  const router = useRouter(); // Initialize useRouter
   const { userDetails, studentCount, isLoading: isUserLoading, isNearingStudentLimit, isStudentLimitReached } = useUser();
 
   const isSubscribed = userDetails?.subscription_status === 'active';
   const isFreePlan = !isSubscribed;
   const usagePercentage = isFreePlan ? (studentCount / FREE_PLAN_STUDENT_LIMIT) * 100 : 0;
+
+  const handleManageBillingClick = () => {
+    router.push('/cart'); // Navigate to the cart page
+  };
 
   if (isUserLoading) {
     return (
@@ -63,6 +69,7 @@ export default function SubscriptionDetails() {
           </div>
           {isSubscribed ? (
             <Button 
+                onClick={handleManageBillingClick} // Add onClick handler
                 className="bg-gray-600 text-white hover:bg-gray-700 transition-colors rounded-md px-4 py-2"
               >
                 Manage Billing
@@ -100,9 +107,9 @@ export default function SubscriptionDetails() {
 
         {isSubscribed && userDetails?.subscription_end_date && (
             <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900">Billing Cycle</h3>
+                <h3 className="font-semibold text-gray-900">Subscription End Date</h3> {/* Changed title */}
                 <p className="text-sm text-gray-600 mt-1">
-                    Your subscription will renew on {new Date(userDetails.subscription_end_date).toLocaleDateString()}.
+                    Your current subscription is active until {new Date(userDetails.subscription_end_date).toLocaleDateString()}. Please renew manually to continue uninterrupted service.
                 </p>
             </div>
         )}
