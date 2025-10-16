@@ -67,7 +67,7 @@ export default function SignupPage() {
         setError(verificationError.message)
       } else {
         NProgress.start();
-        router.push('/dashboard') 
+        router.push('/onboarding') 
       }
     } catch (err) {
       setError('An unexpected error occurred during OTP verification.');

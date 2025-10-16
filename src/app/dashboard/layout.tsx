@@ -1,7 +1,7 @@
 
 'use client';
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarProvider,
@@ -26,9 +26,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useTheme } from "next-themes";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client"; // Corrected import
 import { CustomLink } from "@/components/ui/custom-link";
 import Banner from "@/components/banner";
+import ImportStatusBanner from '@/components/dashboard/import-status-banner';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -40,16 +41,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     isStudentLimitReached, 
     isNearingStudentLimit, 
     isSubscriptionExpired, 
-    isSubscriptionExpiringSoon 
+    isSubscriptionExpiringSoon, 
+    userDetails // Added userDetails to get onboarding_status
   } = useUser();
   const { setTheme } = useTheme();
-  const supabase = createClient();
+  const supabase = createClient(); // Using the createClient from your local file
+
+  const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/');
+    } else if (!isLoading && userDetails) {
+      setOnboardingStatus(userDetails.onboarding_status);
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, userDetails]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -182,6 +188,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-4 mb-4">
+            {/* Onboarding Import Status Banner */}
+            {onboardingStatus === 'importing' && <ImportStatusBanner />}
+
+            {/* Existing Banners */}
             {isSubscriptionExpired && (
               <Banner 
                 type="error" 
