@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Shift } from '@/lib/types'; // Assuming you have this type defined
+import type { Shift } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,8 +42,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
 
     if (currentUser) {
       setUser(currentUser);
-      // Try to fetch existing library data if it exists (for pre-filling form if user somehow restarts onboarding)
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('library_name')
         .eq('id', currentUser.id)
@@ -53,7 +52,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         setLibraryName(profileData.library_name);
       }
 
-      const { data: libraryData, error: libraryFetchError } = await supabase
+      const { data: libraryData } = await supabase
         .from('libraries')
         .select('id, name, total_seats')
         .eq('owner_id', currentUser.id)
@@ -75,8 +74,6 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         }
       }
     } else {
-      // No user, implies a fresh signup for onboarding
-      // Default shifts: 1 shift ready for input
       setShifts([{ library_id: '', name: '', start_time: '', end_time: '', fee: 0, id: `new-${Date.now()}` }]);
     }
     setLoading(false);
@@ -101,7 +98,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
   const removeShift = (index: number) => {
     const newShifts = shifts.filter((_, i) => i !== index);
     setShifts(newShifts);
-  }; // Simplified for onboarding - no DB deletion here
+  };
   
   const handleSave = async () => {
     if (!user) {
@@ -112,21 +109,19 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
     NProgress.start();
     setLoading(true);
 
-    // 1. Update profile with library name (if it was part of initial signup)
-    const { error: profileError } = await supabase
+    const { error: profileUpdateError } = await supabase
         .from('profiles')
         .update({ library_name: libraryName })
         .eq('id', user.id);
 
-    if (profileError) {
-        toast({ title: "Error updating profile", description: profileError.message, variant: "destructive" });
+    if (profileUpdateError) {
+        toast({ title: "Error updating profile", description: profileUpdateError.message, variant: "destructive" });
         setLoading(false);
         NProgress.done();
         return;
     }
 
-    // 2. Create the library (during onboarding, it's always a new library)
-    let currentLibraryId = libraryId; // Check if library already exists (e.g., if user refreshed)
+    let currentLibraryId = libraryId;
     if (!currentLibraryId) {
         const { data, error } = await supabase
             .from('libraries')
@@ -141,9 +136,8 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
             return;
         }
         currentLibraryId = data.id;
-        setLibraryId(currentLibraryId); // Update state for future use
+        setLibraryId(currentLibraryId);
     } else {
-        // If for some reason library already exists, update it
         const { error } = await supabase.from('libraries').update({ name: libraryName, total_seats: totalSeats }).eq('id', currentLibraryId);
         if (error) {
             toast({ title: "Error updating library", description: error.message, variant: "destructive" });
@@ -153,10 +147,9 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         }
     }
     
-    // 3. Insert shifts
     const shiftsToInsert = shifts
-      .filter(s => typeof s.id === 'string' && s.id.startsWith('new-')) // Only insert new shifts
-      .map(({ id, ...rest }) => ({ ...rest, library_id: currentLibraryId! })); // Exclude temporary 'id' field
+      .filter(s => typeof s.id === 'string' && s.id.startsWith('new-'))
+      .map(({ id, ...rest }) => ({ ...rest, library_id: currentLibraryId! }));
 
     if (shiftsToInsert.length > 0) {
         const { error: insertError } = await supabase.from('shifts').insert(shiftsToInsert);
@@ -173,7 +166,6 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         description: "Your library details and shifts have been saved.",
     });
 
-    // 4. Update onboarding status to step2
     updateOnboardingStatus('step2');
     setLoading(false);
     NProgress.done();
@@ -235,8 +227,8 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>General Configuration</CardTitle>
-            <CardDescription>Set the name and total number of seats in your library.</CardDescription>
+            <CardTitle>Basic Library Information</CardTitle>
+            <CardDescription>Start by naming your library and defining its total physical seating capacity.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
@@ -247,7 +239,9 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
                   type="text"
                   value={libraryName}
                   onChange={(e) => setLibraryName(e.target.value)}
+                  placeholder="My Awesome Study Hub"
                 />
+                <p className="text-sm text-muted-foreground">This name will be displayed prominently within your dashboard and to your students.</p>
               </div>
               <div className="grid gap-2 max-w-sm">
                 <Label htmlFor="total-seats">Total Seats</Label>
@@ -256,7 +250,9 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
                   type="number"
                   value={totalSeats}
                   onChange={(e) => setTotalSeats(Number(e.target.value))}
+                  placeholder="50"
                 />
+                <p className="text-sm text-muted-foreground">This is the maximum number of students your library can accommodate at any one time.</p>
               </div>
             </div>
           </CardContent>
@@ -264,23 +260,23 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Shift Management</CardTitle>
-            <CardDescription>Define the shifts, timings, and fee for each.</CardDescription>
+            <CardTitle>Define Your Operating Shifts</CardTitle>
+            <CardDescription>Set up the different time slots your library operates, along with their associated fees.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {shifts.map((shift, index) => (
-              <div key={shift.id} className="space-y-4 p-4 border rounded-lg relative">
+              <div key={shift.id} className="space-y-4 p-4 border rounded-lg relative shadow-sm">
                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeShift(index)}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`shift-name-${index}`}>Shift Name</Label>
-                    <Input id={`shift-name-${index}`} value={shift.name} onChange={(e) => handleShiftChange(index, 'name', e.target.value)} />
+                    <Input id={`shift-name-${index}`} value={shift.name} onChange={(e) => handleShiftChange(index, 'name', e.target.value)} placeholder="Morning Shift" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor={`fee-${index}`}>Fee (₹)</Label>
-                    <Input id={`fee-${index}`} type="number" value={shift.fee} onChange={(e) => handleShiftChange(index, 'fee', Number(e.target.value))} />
+                    <Input id={`fee-${index}`} type="number" value={shift.fee} onChange={(e) => handleShiftChange(index, 'fee', Number(e.target.value))} placeholder="500" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -302,7 +298,9 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         </Card>
         
         <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={loading}>Save and Continue</Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Saving...' : 'Save and Continue'}
+            </Button>
         </div>
       </div>
     </div>

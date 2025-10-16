@@ -4,9 +4,12 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client'; // Use createClient from your local file
+import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/use-user';
 import NProgress from 'nprogress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileUp, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StudentImportProps {
   updateOnboardingStatus: (status: string) => void;
@@ -15,7 +18,7 @@ interface StudentImportProps {
 const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
   const [file, setFile] = useState<File | null>(null);
   const { user, isLoading: isUserHookLoading } = useUser();
-  const supabase = createClient(); // Instantiate client once
+  const supabase = createClient();
   const [uploading, setUploading] = useState(false);
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -47,7 +50,6 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
     NProgress.start();
     setUploading(true);
 
-    // Explicitly get session to ensure the client has it before uploading
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError) {
@@ -65,14 +67,11 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
     }
 
     const filePath = `${user.id}/${file.name}`;
-    console.log("StudentImport: Attempting to upload file to path:", filePath, "for user:", user.id);
-
     const { error } = await supabase.storage.from('student-imports').upload(filePath, file);
 
     if (error) {
       console.error('Error uploading file:', error);
     } else {
-      console.log("StudentImport: File uploaded successfully. Updating onboarding status to 'importing'.");
       updateOnboardingStatus('importing');
     }
     NProgress.done();
@@ -80,38 +79,76 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
   };
 
   const handleSkip = () => {
-    console.log("StudentImport: Skipping student import. Updating onboarding status to 'completed'.");
     updateOnboardingStatus('completed');
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Import Students</h2>
-      <p className="text-muted-foreground">Upload a .xls, .xlsx, or .csv file containing your student data. This will help you quickly populate your library.</p>
-      <p className="text-sm text-blue-500">Need a template? <a href="#" className="underline">Download our template file here.</a></p>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Import Your Student Roster</CardTitle>
+        <CardDescription>
+          Effortlessly add all your students at once by uploading a spreadsheet file.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <p className="text-sm font-medium">Please ensure your spreadsheet includes the following columns:</p>
+          <div className="grid gap-2 md:grid-cols-2">
+            <div>
+              <h4 className="text-md font-semibold">Mandatory Columns:</h4>
+              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                <li><span className="font-medium">student_name</span></li>
+                <li><span className="font-medium">phone_number</span></li>
+                <li><span className="font-medium">shift_name</span> (must match an existing shift name from your library setup)</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-md font-semibold">Recommended Columns:</h4>
+              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                <li><span className="font-medium">join_date</span> (YYYY-MM-DD)</li>
+                <li><span className="font-medium">seat_number</span></li>
+                <li><span className="font-medium">student_id_number</span></li>
+                <li><span className="font-medium">email</span></li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">Columns must be named exactly as listed above. Extra columns will be ignored.</p>
+        </div>
 
-      <div
-        {...getRootProps()}
-        className={`p-10 border-2 border-dashed rounded-md text-center cursor-pointer ${
-          isDragActive ? 'border-primary' : 'border-gray-300'
-        }`}
-      >
-        <input {...getInputProps()} />
-        {file ? (
-          <p>{file.name}</p>
-        ) : (
-          <p>Drag 'n' drop your student file here, or click to select a file</p>
-        )}
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button variant="ghost" onClick={handleSkip} disabled={uploading}>
-          Skip for now
-        </Button>
-        <Button onClick={handleUpload} disabled={!file || uploading}>
-          {uploading ? 'Uploading...' : 'Upload and Continue'}
-        </Button>
-      </div>
-    </div>
+        <div
+          {...getRootProps()}
+          className={cn(
+            "p-10 border-2 border-dashed rounded-md text-center transition-all cursor-pointer",
+            isDragActive
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-muted-foreground hover:border-primary hover:text-primary"
+          )}
+        >
+          <input {...getInputProps()} />
+          {file ? (
+            <div className="flex items-center justify-center gap-2 text-primary font-medium">
+              <CheckCircle className="h-5 w-5" />
+              <span>{file.name}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2">
+              <FileUp className="h-8 w-8" />
+              <p className="font-medium">Drag and drop your file here or click to browse</p>
+              <p className="text-sm text-muted-foreground">Supported formats: .xls, .xlsx, .csv</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-2">
+          <Button variant="ghost" onClick={handleSkip} disabled={uploading}>
+            Skip for now
+          </Button>
+          <Button onClick={handleUpload} disabled={!file || uploading}>
+            {uploading ? 'Uploading...' : 'Upload and Continue'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

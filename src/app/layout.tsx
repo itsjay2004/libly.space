@@ -9,7 +9,7 @@ import ClientProgressBar from '@/components/ui/client-progress-bar';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'libly.space',
+  // title: 'libly.space', // Removed global title
   description: 'Seat management for modern libraries',
 };
 
@@ -29,7 +29,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
