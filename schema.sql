@@ -66,7 +66,8 @@ create table students (
   shift_id uuid references public.shifts (id),
   seat_number integer,
   status text NOT NULL DEFAULT 'active',
-  join_date timestamp with time zone NOT NULL DEFAULT now()
+  join_date timestamp with time zone NOT NULL DEFAULT now(),
+  membership_expiry_date date
 );
 -- Add RLS to students table
 alter table students
@@ -124,9 +125,8 @@ create table payments (
   library_id uuid references public.libraries not null,
   amount numeric(10, 2) not null,
   payment_date date not null default current_date,
-  due_date date,
-  status text not null,
-  for_month text not null
+  membership_start_date date,
+  membership_end_date date
 );
 -- Add RLS to payments table
 alter table payments

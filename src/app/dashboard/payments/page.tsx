@@ -5,9 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import PaymentsList from '@/components/payments/payments-list';
-import ClientAddPaymentFormForPaymentsPage from '@/components/payments/client-add-payment-form-for-payments-page';
-import DuesList from '@/components/payments/dues-list';
+import AddPaymentForm from '@/components/payments/add-payment-form'; // UPDATED IMPORT
+import type { PaymentWithStudent } from "@/lib/types"; // Assuming a type for payment with student name
 
 export default async function PaymentsPage() {
   const cookieStore = cookies();
@@ -37,7 +36,7 @@ export default async function PaymentsPage() {
     );
   }
 
-  // Fetch payments for the library
+  // Fetch recent payments for the library
   const { data: payments, error: paymentsError } = await supabase
     .from('payments')
     .select(`
@@ -54,45 +53,52 @@ export default async function PaymentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <ClientAddPaymentFormForPaymentsPage libraryId={libraryData.id} />
-        </div>
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-            <CardDescription>Last 10 payments recorded.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.length > 0 ? (payments.map((payment) => (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <div className="lg:col-span-1">
+        {/* Using the new unified component directly */}
+        <AddPaymentForm libraryId={libraryData.id} />
+      </div>
+
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Recent Payments</CardTitle>
+          <CardDescription>The last 10 payments recorded in your library.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Membership Period</TableHead>
+                <TableHead>Payment Date</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments && payments.length > 0 ? (
+                (payments as PaymentWithStudent[]).map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell>{payment.students?.name || 'N/A'}</TableCell>
-                    <TableCell>{payment.for_month}</TableCell>
-                    <TableCell>{format(new Date(payment.payment_date), "PPP")}</TableCell>
+                    <TableCell className="font-medium">{payment.students?.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {payment.membership_start_date ? format(new Date(payment.membership_start_date), "dd MMM yyyy") : 'N/A'}
+                       - 
+                      {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM yyyy") : 'N/A'}
+                    </TableCell>
+                    <TableCell>{format(new Date(payment.payment_date), "dd MMM yyyy")}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
-                ))) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No recent payments.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-      <DuesList />
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                    No recent payments found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
