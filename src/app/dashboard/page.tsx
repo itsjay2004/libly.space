@@ -1,208 +1,131 @@
-import StatsCard from '@/components/dashboard/stats-card';
-import MonthlyCollectionStatus from '@/components/dashboard/monthly-collection-status';
-import DueReminders from '@/components/dashboard/due-reminders';
-import { Users, UserX, PiggyBank, CircleDollarSign } from 'lucide-react';
-import StudentLookup from '@/components/dashboard/student-lookup';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { CustomLink } from '@/components/ui/custom-link'
-import { Button } from '@/components/ui/button';
 import { Suspense } from 'react';
+import { format, startOfMonth, subMonths, isFuture, addDays, startOfToday } from 'date-fns';
+import { Users, TrendingUp, PiggyBank, UserX } from 'lucide-react';
+
 import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
-import { startOfMonth, endOfMonth, differenceInDays, getDaysInMonth, addMonths, isSameMonth } from 'date-fns';
+import StatsCard from '@/components/dashboard/stats-card';
+import StudentLookup from '@/components/dashboard/student-lookup';
+import ExpiringSoon from '@/components/dashboard/expiring-soon'; // Corrected import name
+import MonthlyRevenueChart from '@/components/dashboard/monthly-revenue-chart';
+import { CustomLink } from '@/components/ui/custom-link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import StudentActions from '@/components/students/student-actions';
+import QuickAddPayment from '@/components/dashboard/quick-add-payment';
 
 async function DashboardData() {
   const cookieStore = cookies();
   const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return <p>Please log in to view the dashboard.</p>;
 
-  if (!user) {
-    return <p>Please log in to view the dashboard.</p>;
-  }
-
-  // Fetch library information for the current user
   const { data: libraryData, error: libraryError } = await supabase
     .from('libraries')
     .select('id, total_seats')
     .eq('owner_id', user.id)
     .single();
 
-  if (libraryError && libraryError.code !== 'PGRST116') {
-    console.error('Error fetching library data:', libraryError);
-    return <p>Error loading library data.</p>;
-  }
-
-  if (!libraryData) {
-    // New user without a library, show a welcome message and default stats.
+  if (libraryError || !libraryData) {
     return (
-        <div className="flex flex-col gap-8">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard
-                    title="Total Strength"
-                    value="0"
-                    icon={<Users className="h-6 w-6 text-primary" />}
-                    description="Active students in the library"
-                />
-                <StatsCard
-                    title="Payment Dues"
-                    value="0"
-                    icon={<UserX className="h-6 w-6 text-destructive" />}
-                    description="Students with outstanding payments"
-                />
-                <StatsCard
-                    title="Total Dues"
-                    value="₹0"
-                    icon={<CircleDollarSign className="h-6 w-6 text-amber-500" />}
-                    description="Total outstanding amount"
-                />
-                <StatsCard
-                    title="Seats Available"
-                    value="0"
-                    icon={<PiggyBank className="h-6 w-6 text-green-500" />}
-                    description="Out of 0 total seats"
-                />
-            </div>
-            <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                <h2 className="text-2xl font-semibold mb-2">Welcome to your Dashboard!</h2>
-                <p className="mb-4">It looks like you haven't set up your library yet. Add shifts, students to get started.</p>
-                <Button asChild>
-                    <CustomLink href="/dashboard/library">Go to Settings</CustomLink>
-                </Button>
-            </div>
-        </div>
+      <div className="text-center p-8 border-2 border-dashed rounded-lg">
+        <h2 className="text-2xl font-semibold mb-2">Welcome to Your Dashboard!</h2>
+        <p className="mb-4">To get started, please set up your library details in the settings.</p>
+        <Button asChild><CustomLink href="/dashboard/library">Go to Library Settings</CustomLink></Button>
+      </div>
     );
   }
 
-  const libraryId = libraryData.id;
-  const totalSeats = libraryData.total_seats;
+  const { id: libraryId, total_seats } = libraryData;
 
-  // Fetch shifts for the current library to calculate total seat slots
-    const { data: shiftsData, error: shiftsError } = await supabase
-    .from('shifts')
-    .select('id')
-    .eq('library_id', libraryId);
+  // --- Data Fetching ---
+  const today = startOfToday();
+  const sixMonthsAgo = startOfMonth(subMonths(today, 5));
 
-  if (shiftsError) {
-    console.error('Error fetching shifts data:', shiftsError);
-    return <p>Error loading shifts data.</p>;
-  }
-  
-  const numberOfShifts = shiftsData?.length || 0;
-  const totalSeatSlots = totalSeats * numberOfShifts;
-
-
-  // Fetch students for the current library
   const { data: studentsData, error: studentsError } = await supabase
     .from('students')
-    .select(`
-      id,
-      name,
-      status,
-      seat_number,
-      join_date,
-      shift_id,
-      shifts ( fee ),
-      payments ( amount )
-    `)
+    .select('id, seat_number, membership_expiry_date')
     .eq('library_id', libraryId);
 
-  if (studentsError) {
-    console.error('Error fetching students data:', studentsError);
-    return <p>Error loading students data.</p>;
+  const { data: paymentsData, error: paymentsError } = await supabase
+    .from('payments')
+    .select('amount, payment_date')
+    .eq('library_id', libraryId)
+    .gte('payment_date', sixMonthsAgo.toISOString());
+  
+  const { count: shiftsCount, error: shiftsError } = await supabase
+    .from('shifts')
+    .select('*', { count: 'exact', head: true })
+    .eq('library_id', libraryId);
+
+  if (studentsError || paymentsError || shiftsError) {
+    console.error({ studentsError, paymentsError, shiftsError });
+    return <p>Error loading dashboard data.</p>;
   }
 
-  const studentsWithCalculatedDues = studentsData
-    ? studentsData.map(student => {
-        const studentPayments = student.payments || [];
-        const totalPaid = studentPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
-        let totalExpectedFee = 0;
-        let due = 0;
+  // --- KPI Calculations ---
+  const activeMembers = studentsData.filter(s => s.membership_expiry_date && isFuture(new Date(s.membership_expiry_date))).length;
+  const sevenDaysFromNow = addDays(today, 7);
+  const expiringSoonCount = studentsData.filter(s => s.membership_expiry_date && new Date(s.membership_expiry_date) >= today && new Date(s.membership_expiry_date) <= sevenDaysFromNow).length;
 
-        if (student.status === 'active' && student.shift_id && student.shifts?.fee !== undefined) {
-          const monthlyFee = student.shifts.fee;
-          const studentJoinDate = new Date(student.join_date);
-          const today = new Date();
+  const totalSeatSlots = total_seats * (shiftsCount || 0);
+  const occupiedSeats = studentsData.filter(s => s.seat_number !== null).length;
+  const occupancyRate = totalSeatSlots > 0 ? Math.round((occupiedSeats / totalSeatSlots) * 100) : 0;
 
-          const joinMonthStart = startOfMonth(studentJoinDate);
+  const currentMonthStart = startOfMonth(today);
+  const thisMonthRevenue = paymentsData
+    .filter(p => new Date(p.payment_date) >= currentMonthStart)
+    .reduce((acc, p) => acc + p.amount, 0);
 
-          if (isSameMonth(studentJoinDate, today)) {
-            const daysInJoinMonth = getDaysInMonth(studentJoinDate);
-            const activeDaysThisMonth = differenceInDays(today, studentJoinDate) + 1;
-            totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysThisMonth;
-          } else {
-            const joinMonthEnd = endOfMonth(studentJoinDate);
-            const daysInJoinMonth = getDaysInMonth(studentJoinDate);
-            const activeDaysInJoiningMonth = differenceInDays(joinMonthEnd, studentJoinDate) + 1;
-            totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysInJoiningMonth;
-
-            let currentMonthIterator = addMonths(joinMonthStart, 1);
-            while (currentMonthIterator < startOfMonth(today)) {
-              totalExpectedFee += monthlyFee;
-              currentMonthIterator = addMonths(currentMonthIterator, 1);
-            }
-
-            const daysInCurrentMonth = getDaysInMonth(today);
-            const activeDaysInCurrentMonth = differenceInDays(today, startOfMonth(today)) + 1;
-            totalExpectedFee += (monthlyFee / daysInCurrentMonth) * activeDaysInCurrentMonth;
-          }
-          
-          due = totalExpectedFee - totalPaid;
-        }
-
-        return {
-          ...student,
-          calculatedDue: due > 0 ? due : 0,
-        };
+  // --- Chart Data Preparation ---
+  const monthlyRevenue = Array.from({ length: 6 }).map((_, i) => {
+    const month = subMonths(today, i);
+    const monthStart = startOfMonth(month);
+    const total = paymentsData
+      .filter(p => {
+        const paymentMonth = startOfMonth(new Date(p.payment_date));
+        return paymentMonth.getTime() === monthStart.getTime();
       })
-    : [];
-
-  const activeStudents = studentsData?.filter(s => s.status === 'active').length || 0;
-  const studentsWithDues = studentsWithCalculatedDues.filter(s => s.calculatedDue > 0).length;
-  const totalDues = studentsWithCalculatedDues.reduce((acc, student) => acc + student.calculatedDue, 0);
-  const totalOccupiedSeats = studentsData?.filter(s => s.seat_number !== null).length || 0;
-  const seatsAvailable = totalSeatSlots - totalOccupiedSeats;
+      .reduce((acc, p) => acc + p.amount, 0);
+    return { month: format(monthStart, 'MMM yyyy'), total };
+  }).reverse();
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
+       {/* --- Quick Actions Header --- */}
+      <Card>
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h2 className="text-xl font-semibold">Quick Actions</h2>
+                <p className="text-sm text-muted-foreground">Instantly add a new student or record a payment.</p>
+            </div>
+            <div className="flex items-center gap-2">
+                <StudentActions />
+                <QuickAddPayment libraryId={libraryId} />
+            </div>
+        </CardContent>
+      </Card>
+      
+      {/* --- KPI Cards --- */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard 
-          title="Total Strength" 
-          value={activeStudents.toString()} 
-          icon={<Users className="h-6 w-6 text-primary" />} 
-          description="Active students in the library"
-        />
-        <StatsCard 
-          title="Payment Dues" 
-          value={studentsWithDues.toString()} 
-          icon={<UserX className="h-6 w-6 text-destructive" />} 
-          description="Students with outstanding payments"
-        />
-        <StatsCard 
-          title="Total Dues" 
-          value={`₹${totalDues.toLocaleString()}`} 
-          icon={<CircleDollarSign className="h-6 w-6 text-amber-500" />} 
-          description="Total outstanding amount"
-        />
-        <StatsCard 
-          title="Seats Available" 
-          value={seatsAvailable.toString()} 
-          icon={<PiggyBank className="h-6 w-6 text-green-500" />} 
-          description={`Out of ${totalSeatSlots} total slots`}
-        />
+        <StatsCard title="Active Members" value={activeMembers.toString()} icon={<Users />} description="Students with an active membership." />
+        <StatsCard title="Occupancy Rate" value={`${occupancyRate}%`} icon={<TrendingUp />} description={`${occupiedSeats} of ${totalSeatSlots} slots filled.`} />
+        <StatsCard title="This Month's Revenue" value={`₹${thisMonthRevenue.toLocaleString()}`} icon={<PiggyBank />} description={`Total collection for ${format(today, 'MMMM')}.`} />
+        <StatsCard title="Expiring Soon" value={expiringSoonCount.toString()} icon={<UserX />} description="Memberships ending in the next 7 days." />
       </div>
 
-      <div className="grid gap-8">
-         <StudentLookup />
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            <DueReminders />
+      {/* --- Main Layout --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <MonthlyRevenueChart data={monthlyRevenue} />
+          <StudentLookup />
         </div>
+        {/* Right Column */}
         <div className="lg:col-span-1">
-          <MonthlyCollectionStatus />
-        
+          <ExpiringSoon /> {/* Corrected component name */}
         </div>
       </div>
     </div>

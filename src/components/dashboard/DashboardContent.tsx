@@ -31,7 +31,7 @@ export function DashboardContent({ children }: { children: ReactNode }) {
 
     return (
         <div className="h-screen p-2">
-            <div className="bg-white dark:bg-black/80 rounded rounded-2xl h-full">
+            <div className="bg-white dark:bg-black/80 rounded rounded-2xl h-full flex flex-col">
                 <header className="flex items-center justify-between h-20 px-4 sm:px-8">
                     <div className="flex justify-between border-b w-full py-4">
                         <div className="flex items-center gap-4">
@@ -54,7 +54,7 @@ export function DashboardContent({ children }: { children: ReactNode }) {
                         </div>
                     </div>
                 </header>
-                <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar">
                     <div className="flex flex-col gap-4 mb-4">
                         {onboardingStatus === 'importing' && <ImportStatusBanner />}
                         <Banners />

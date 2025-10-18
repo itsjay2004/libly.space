@@ -63,9 +63,9 @@ create table students (
   email text,
   id_number text,
   address text,
+  gender text,
   shift_id uuid references public.shifts (id),
   seat_number integer,
-  status text NOT NULL DEFAULT 'active',
   join_date timestamp with time zone NOT NULL DEFAULT now(),
   membership_expiry_date date
 );

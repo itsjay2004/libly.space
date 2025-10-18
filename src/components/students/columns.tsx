@@ -1,47 +1,66 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import type { Student } from "@/lib/types"
+import type { StudentWithRelations } from "@/lib/types" // Assuming a unified type
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 import StudentActions from "./student-actions"
-import { startOfMonth, endOfMonth, differenceInDays, getDaysInMonth, addMonths, isSameMonth } from 'date-fns';
+import { format, isFuture } from 'date-fns';
 
-interface StudentWithDetails extends Student {
-  shifts: { name: string, fee: number } | null;
-  payments: { amount: number; status: 'paid' | 'due' }[];
-}
-
-export const columns: ColumnDef<StudentWithDetails>[] = [
+export const columns: ColumnDef<StudentWithRelations>[] = [
   {
-    accessorKey: "phone",
+    accessorKey: "name",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Phone Number
+          Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
+    cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
   },
   {
-    accessorKey: "name",
-    header: "Name",
+    accessorKey: "phone",
+    header: "Phone Number",
   },
   {
-    accessorKey: "status",
+    id: "status",
     header: "Status",
+    accessorFn: (row) => row.membership_expiry_date, // Accessor for sorting/filtering
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const expiryDate = row.original.membership_expiry_date;
+      const isActive = expiryDate ? isFuture(new Date(expiryDate)) : false;
+      const statusText = isActive ? 'Active' : 'Expired';
+      
       return (
-        <Badge variant={status === 'active' ? 'default' : 'destructive'} className={status === 'active' ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'}>
-          {status}
+        <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+          {statusText}
         </Badge>
       )
+    }
+  },
+  {
+    accessorKey: "membership_expiry_date",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Expiry Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const expiryDate = row.getValue("membership_expiry_date") as string;
+      if (!expiryDate) return <span className="text-muted-foreground">Not Set</span>;
+      return <div>{format(new Date(expiryDate), "dd MMM yyyy")}</div>
     }
   },
   {
@@ -66,82 +85,16 @@ export const columns: ColumnDef<StudentWithDetails>[] = [
     cell: ({ row }) => {
         const joinDate = row.getValue("join_date") as string;
         if (!joinDate) return <span className="text-muted-foreground">N/A</span>;
-        const formattedDate = new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        }).format(new Date(joinDate));
-        return <div>{formattedDate}</div>
-    }
-  },
-  {
-    id: "due",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Due
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const student = row.original;
-      let calculatedDue = 0;
-
-      const totalPaid = student.payments.reduce((acc, p) => acc + (p.amount || 0), 0);
-
-      if (student.status === 'active' && student.shifts?.fee !== undefined) {
-        const monthlyFee = student.shifts.fee;
-        const studentJoinDate = new Date(student.join_date);
-        const today = new Date();
-
-        let totalExpectedFee = 0;
-
-        const joinMonthStart = startOfMonth(studentJoinDate);
-        const joinMonthEnd = endOfMonth(studentJoinDate);
-
-        if (isSameMonth(studentJoinDate, today)) {
-          const daysInJoinMonth = getDaysInMonth(studentJoinDate);
-          const activeDaysThisMonth = differenceInDays(today, studentJoinDate) + 1;
-          totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysThisMonth;
-        } else {
-          const daysInJoinMonth = getDaysInMonth(studentJoinDate);
-          const activeDaysInJoiningMonth = differenceInDays(joinMonthEnd, studentJoinDate) + 1;
-          totalExpectedFee += (monthlyFee / daysInJoinMonth) * activeDaysInJoiningMonth;
-
-          let currentMonthIterator = addMonths(joinMonthStart, 1);
-          while (currentMonthIterator < startOfMonth(today)) {
-            totalExpectedFee += monthlyFee;
-            currentMonthIterator = addMonths(currentMonthIterator, 1);
-          }
-
-          const daysInCurrentMonth = getDaysInMonth(today);
-          const activeDaysInCurrentMonth = differenceInDays(today, startOfMonth(today)) + 1;
-          totalExpectedFee += (monthlyFee / daysInCurrentMonth) * activeDaysInCurrentMonth;
-        }
-        
-        calculatedDue = totalExpectedFee - totalPaid;
-      }
-
-      const formatted = new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-      }).format(calculatedDue > 0 ? calculatedDue : 0);
-
-      return <div className="text-right font-medium">{formatted}</div>
+        return <div>{format(new Date(joinDate), "dd MMM yyyy")}</div>
     }
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const student = row.original
-
       return (
         <div onClick={(e) => e.stopPropagation()}>
-          <StudentActions student={student} onActionComplete={() => window.location.reload()} />
+          <StudentActions student={student} />
         </div>
       )
     },
