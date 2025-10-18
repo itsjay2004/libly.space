@@ -106,7 +106,8 @@ const OnboardingPage = () => {
       case 'step2':
         return <StudentImport updateOnboardingStatus={updateOnboardingStatus} />;
       case 'importing':
-        return <Ready />;
+      case 'ready':
+        return <Ready updateOnboardingStatus={updateOnboardingStatus} />;
       default:
         return <div>Unknown step</div>;
     }
@@ -119,6 +120,7 @@ const OnboardingPage = () => {
       case 'step2':
         return 2;
       case 'importing':
+      case 'ready':
         return 3;
       default:
         return 0;

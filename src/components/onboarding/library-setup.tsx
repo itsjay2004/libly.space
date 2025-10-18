@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 import NProgress from 'nprogress';
+import { Loader2 } from 'lucide-react';
 
 interface LibrarySetupProps {
   updateOnboardingStatus: (status: string) => void;
@@ -27,6 +28,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
   const [totalSeats, setTotalSeats] = useState(1);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchInitialData = useCallback(async () => {
     NProgress.start();
@@ -107,7 +109,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
     }
     
     NProgress.start();
-    setLoading(true);
+    setIsSaving(true);
 
     const { error: profileUpdateError } = await supabase
         .from('profiles')
@@ -116,7 +118,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
 
     if (profileUpdateError) {
         toast({ title: "Error updating profile", description: profileUpdateError.message, variant: "destructive" });
-        setLoading(false);
+        setIsSaving(false);
         NProgress.done();
         return;
     }
@@ -131,7 +133,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
 
         if (error || !data) {
             toast({ title: "Error creating library", description: error?.message, variant: "destructive" });
-            setLoading(false);
+            setIsSaving(false);
             NProgress.done();
             return;
         }
@@ -141,7 +143,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         const { error } = await supabase.from('libraries').update({ name: libraryName, total_seats: totalSeats }).eq('id', currentLibraryId);
         if (error) {
             toast({ title: "Error updating library", description: error.message, variant: "destructive" });
-            setLoading(false);
+            setIsSaving(false);
             NProgress.done();
             return;
         }
@@ -155,7 +157,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         const { error: insertError } = await supabase.from('shifts').insert(shiftsToInsert);
         if (insertError) {
             toast({ title: "Error saving shifts", description: insertError.message, variant: "destructive" });
-            setLoading(false);
+            setIsSaving(false);
             NProgress.done();
             return;
         }
@@ -167,7 +169,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
     });
 
     updateOnboardingStatus('step2');
-    setLoading(false);
+    setIsSaving(false);
     NProgress.done();
   }
 
@@ -227,8 +229,8 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Basic Library Information</CardTitle>
-            <CardDescription>Start by naming your library and defining its total physical seating capacity.</CardDescription>
+            <CardTitle>Welcome! Let's Set Up Your Library.</CardTitle>
+            <CardDescription>This is the first step to getting your library operational. Please provide some basic details to get started.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
@@ -252,7 +254,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
                   onChange={(e) => setTotalSeats(Number(e.target.value))}
                   placeholder="50"
                 />
-                <p className="text-sm text-muted-foreground">This is the maximum number of students your library can accommodate at any one time.</p>
+                <p className="text-sm text-muted-foreground">Enter the total number of physical seats available in your library. This is crucial for managing capacity.</p>
               </div>
             </div>
           </CardContent>
@@ -261,7 +263,7 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         <Card>
           <CardHeader>
             <CardTitle>Define Your Operating Shifts</CardTitle>
-            <CardDescription>Set up the different time slots your library operates, along with their associated fees.</CardDescription>
+            <CardDescription>Set up the different time slots your library operates, along with their associated fees. You can add as many shifts as you need.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {shifts.map((shift, index) => (
@@ -272,11 +274,11 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor={`shift-name-${index}`}>Shift Name</Label>
-                    <Input id={`shift-name-${index}`} value={shift.name} onChange={(e) => handleShiftChange(index, 'name', e.target.value)} placeholder="Morning Shift" />
+                    <Input id={`shift-name-${index}`} value={shift.name} onChange={(e) => handleShiftChange(index, 'name', e.target.value)} placeholder="e.g., Morning Shift" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor={`fee-${index}`}>Fee (₹)</Label>
-                    <Input id={`fee-${index}`} type="number" value={shift.fee} onChange={(e) => handleShiftChange(index, 'fee', Number(e.target.value))} placeholder="500" />
+                    <Input id={`fee-${index}`} type="number" value={shift.fee} onChange={(e) => handleShiftChange(index, 'fee', Number(e.target.value))} placeholder="e.g., 500" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -298,8 +300,9 @@ const LibrarySetup = ({ updateOnboardingStatus }: LibrarySetupProps) => {
         </Card>
         
         <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={loading}>
-              {loading ? 'Saving...' : 'Save and Continue'}
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving ? 'Saving...' : 'Save and Continue'}
             </Button>
         </div>
       </div>

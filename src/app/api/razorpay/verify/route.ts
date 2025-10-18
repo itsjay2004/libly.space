@@ -83,7 +83,7 @@ export async function POST(req: Request) {
         throw subscriptionError;
       }
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, paymentId: razorpay_payment_id });
     } else {
       return NextResponse.json({ success: false }, { status: 400 });
     }

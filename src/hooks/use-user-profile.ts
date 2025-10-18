@@ -9,6 +9,7 @@ interface UserDetails {
   phone: string;
   subscription_status: string;
   subscription_end_date: string;
+  onboarding_status: string;
 }
 
 export const useUserProfile = (user: User | null) => {

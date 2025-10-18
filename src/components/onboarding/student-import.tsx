@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/use-user';
 import NProgress from 'nprogress';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, CheckCircle } from 'lucide-react';
+import { FileUp, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StudentImportProps {
@@ -79,9 +79,9 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
   };
 
   const handleSkip = () => {
-    updateOnboardingStatus('completed');
+    updateOnboardingStatus('ready');
   };
-
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -138,14 +138,20 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
             </div>
           )}
         </div>
-
-        <div className="flex justify-end space-x-2">
-          <Button variant="ghost" onClick={handleSkip} disabled={uploading}>
-            Skip for now
-          </Button>
-          <Button onClick={handleUpload} disabled={!file || uploading}>
-            {uploading ? 'Uploading...' : 'Upload and Continue'}
-          </Button>
+        
+        <div className="flex justify-between items-center">
+            <Button variant="outline" onClick={() => updateOnboardingStatus('step1')} disabled={uploading}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+            </Button>
+            <div className="flex space-x-2">
+              <Button variant="ghost" onClick={handleSkip} disabled={uploading}>
+                Skip for now
+              </Button>
+              <Button onClick={handleUpload} disabled={!file || uploading}>
+                {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {uploading ? 'Uploading...' : 'Upload and Continue'}
+              </Button>
+            </div>
         </div>
       </CardContent>
     </Card>
