@@ -1,37 +1,37 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { useQuery } from '@tanstack/react-query';
 
 export const useLibrary = (user: User | null) => {
-  const [libraryId, setLibraryId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  const fetchLibrary = useCallback(async () => {
-    if (user) {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('libraries')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
+  const fetchLibraryId = async (currentUser: User) => {
+    const { data, error } = await supabase
+      .from('libraries')
+      .select('id')
+      .eq('owner_id', currentUser.id)
+      .single();
 
-      if (error) {
-        setError(error.message);
-        setLibraryId(null);
-      } else {
-        setLibraryId(data.id);
+    if (error) {
+      // If no library is found, return null instead of throwing an error
+      // This matches the original behavior where libraryId would be null on error
+      if (error.code === 'PGRST116') { // No rows found
+        return null;
       }
-      setIsLoading(false);
+      throw error;
     }
-  }, [user, supabase]);
+    return data.id;
+  };
 
-  useEffect(() => {
-    fetchLibrary();
-  }, [fetchLibrary]);
+  const { data: libraryId, isLoading, error, refetch } = useQuery({
+    queryKey: ['libraryId', user?.id],
+    queryFn: () => fetchLibraryId(user!),
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+  });
 
-  return { libraryId, isLoading, error, refresh: fetchLibrary };
+  return { libraryId, isLoading, error, refresh: refetch };
 };

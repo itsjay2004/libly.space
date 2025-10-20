@@ -11,13 +11,12 @@ import StatsCard from '@/components/dashboard/stats-card';
 import StudentLookup from '@/components/dashboard/student-lookup';
 import ExpiringSoon from '@/components/dashboard/expiring-soon';
 import MonthlyRevenueChart from '@/components/dashboard/monthly-revenue-chart';
+import PaymentMethodChart from '@/components/dashboard/payment-method-chart'; // Import PaymentMethodChart
 import { CustomLink } from '@/components/ui/custom-link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import StudentActions from '@/components/students/student-actions';
 import QuickAddPayment from '@/components/dashboard/quick-add-payment';
-// Note: PaymentMethodChart might need a separate, specific query if not included in stats
-// For now, let's assume we can adapt or simplify it.
 
 async function DashboardData() {
   const cookieStore = cookies();
@@ -60,6 +59,12 @@ async function DashboardData() {
     total: d.revenue
   }));
 
+  // Map paymentMethodStats to the format expected by PaymentMethodChart
+  const paymentMethodChartData = stats.paymentMethodStats.map(pm => ({
+    payment_method: pm.payment_method,
+    total: pm.total_amount,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -88,7 +93,8 @@ async function DashboardData() {
           {/* StudentLookup is now self-contained and optimized */}
           <StudentLookup /> 
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <PaymentMethodChart data={paymentMethodChartData} /> {/* Pass mapped data */}
           {/* --- FIX: Passing the pre-fetched list to the component --- */}
           <ExpiringSoon expiringStudents={stats.expiringSoonList} />
         </div>

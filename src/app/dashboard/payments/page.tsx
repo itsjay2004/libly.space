@@ -9,43 +9,19 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AddPaymentForm from '@/components/payments/add-payment-form';
 import type { PaymentWithStudent } from "@/lib/types";
-import { useUser } from '@/hooks/use-user';
+import { useSharedUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
 
 export default function PaymentsPage() {
-  const { user, isLoading: isUserLoading } = useUser();
-  const [payments, setPayments] = useState<PaymentWithStudent[]>([]);
-  const [libraryId, setLibraryId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const { user, libraryId, isLoading: isUserContextLoading } = useSharedUser();
   const supabase = createClient();
 
   const fetchRecentPayments = useCallback(async () => {
-    if (!user) return;
-
-    // Keep isLoading true only on the initial fetch, not re-fetches
-    // This prevents the whole page from showing a skeleton on refresh
     if (!libraryId) {
-        setIsLoading(true);
-    }
-    setError(null);
-
-    const { data: libraryData, error: libraryError } = await supabase
-      .from('libraries')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (libraryError || !libraryData) {
-      setError("No library found. Please set one up in settings.");
-      setIsLoading(false);
-      return;
-    }
-    
-    // Only set libraryId if it's not already set to avoid extra re-renders
-    if (!libraryId) {
-        setLibraryId(libraryData.id);
+      // This case should ideally be handled by `enabled: !!libraryId`
+      // but as a fallback, return an empty array if somehow called without libraryId
+      return [];
     }
 
     const { data: paymentsData, error: paymentsError } = await supabase
@@ -54,45 +30,57 @@ export default function PaymentsPage() {
         *,
         students ( name )
       `)
-      .eq('library_id', libraryData.id)
+      .eq('library_id', libraryId)
       .order('payment_date', { ascending: false })
       .limit(10);
 
     if (paymentsError) {
-      console.error("Error fetching payments:", paymentsError);
-      setError("Failed to load recent payments.");
-    } else {
-      setPayments(paymentsData as PaymentWithStudent[]);
+      throw paymentsError;
     }
-    setIsLoading(false);
-  }, [user, supabase, libraryId]); // Added libraryId to dependencies
+    return paymentsData as PaymentWithStudent[];
+  }, [libraryId, supabase]);
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      fetchRecentPayments();
-    } else if (!isUserLoading && !user) {
-      setIsLoading(false);
-      setError("Please log in to view payments.");
-    }
-  }, [isUserLoading, user, fetchRecentPayments]);
+  const { data: payments = [], isLoading, isError, error, refetch } = useQuery<PaymentWithStudent[], Error>({
+    queryKey: ['payments', libraryId],
+    queryFn: fetchRecentPayments,
+    enabled: !!user && !!libraryId, // Only fetch if user and libraryId are available
+    staleTime: 1000 * 30, // 30 seconds stale time for recent payments
+    gcTime: 1000 * 60 * 5, // 5 minutes garbage collection time
+  });
 
-  if (isLoading) {
+  // Check if initial user context is still loading
+  if (isUserContextLoading) {
     return <PaymentsPageSkeleton />;
   }
 
-  if (error) {
-    return <p className="text-center text-red-500">{error}</p>;
+  // Check if user is not logged in after context loads
+  if (!user) {
+    return <p className="text-center text-red-500">Please log in to view payments.</p>;
+  }
+
+  // Check if libraryId is not available after context loads
+  if (!libraryId) {
+      return (
+        <div className="text-center p-8 border-2 border-dashed rounded-lg">
+            <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
+            <p className="mb-4">Please set up your library in the settings to manage payments.</p>
+            <Button asChild>
+                <Link href="/dashboard/library">Go to Library Settings</Link>
+            </Button>
+        </div>
+      );
+  }
+
+  // Handle errors from the query itself
+  if (isError) {
+    return <p className="text-center text-red-500">Error loading recent payments: {error?.message}</p>;
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-1">
-        {libraryId ? (
-          // --- FIX: Pass the fetchRecentPayments function as the callback ---
-          <AddPaymentForm libraryId={libraryId} onPaymentSuccess={fetchRecentPayments} />
-        ) : (
-          <Skeleton className="h-96 w-full" />
-        )}
+        {/* AddPaymentForm will invalidate queries on success, triggering a refetch here */}
+        <AddPaymentForm libraryId={libraryId} />
       </div>
 
       <Card className="lg:col-span-2">
@@ -111,7 +99,17 @@ export default function PaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.length > 0 ? (
+              {isLoading ? (
+                // Skeleton rows while payments are loading
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : payments.length > 0 ? (
                 payments.map((payment) => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.students?.name || 'N/A'}</TableCell>

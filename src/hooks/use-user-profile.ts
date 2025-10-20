@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { useQuery } from '@tanstack/react-query';
 
 interface UserDetails {
   full_name: string;
@@ -13,33 +13,28 @@ interface UserDetails {
 }
 
 export const useUserProfile = (user: User | null) => {
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  const fetchUserProfile = useCallback(async () => {
-    if (user) {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  const fetchUserProfileData = async (currentUser: User) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .single();
 
-      if (error) {
-        setError(error.message);
-        setUserDetails(null);
-      } else {
-        setUserDetails(data as UserDetails);
-      }
-      setIsLoading(false);
+    if (error) {
+      throw error;
     }
-  }, [user, supabase]);
+    return data as UserDetails;
+  };
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, [fetchUserProfile]);
+  const { data: userDetails, isLoading, error, refetch } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: () => fetchUserProfileData(user!),
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes (Garbage Collection Time)
+  });
 
-  return { userDetails, isLoading, error, refresh: fetchUserProfile };
+  return { userDetails, isLoading, error, refresh: refetch };
 };

@@ -1,105 +1,86 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/use-user';
 import { Input } from '@/components/ui/input';
 import LoadingSpinner from '@/components/ui/loading-spinner';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 
-// --- No longer needs to be async, it's a client component hook ---
 interface Student {
   id: string;
   name: string;
 }
 
 export default function StudentLookup() {
-  const { user, libraryId } = useUser(); // Using the optimized useUser hook
-  const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { user, libraryId } = useUser();
+  const [rawSearchTerm, setRawSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const fetchStudents = useCallback(async (term: string) => {
-    if (!user || !libraryId) {
-      // Don't set an error here, just don't fetch if user/library isn't ready
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    const supabase = createClient();
-
-    const { data, error: fetchError } = await supabase
-      .from('students')
-      .select('id, name')
-      .eq('library_id', libraryId)
-      .ilike('name', `%${term}%`)
-      .limit(5); // Limit results to a reasonable number for a lookup
-
-    if (fetchError) {
-      console.error('Error fetching students:', fetchError);
-      setError('Failed to fetch students.');
-      setStudents([]);
-    } else {
-      setStudents(data || []);
-    }
-
-    setLoading(false);
-  }, [user, libraryId]);
-
-  React.useEffect(() => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    // --- FIX: Only search when the user has typed something (e.g., 2+ chars) ---
-    // This prevents any request from firing on the initial page load.
-    if (searchTerm.trim().length < 2) {
-      setStudents([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      fetchStudents(searchTerm);
-    }, 500); // 500ms debounce to avoid excessive requests while typing
+  // Debounce the search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(rawSearchTerm);
+    }, 500); // 500ms debounce
 
     return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
+      clearTimeout(handler);
     };
-  }, [searchTerm, fetchStudents]);
+  }, [rawSearchTerm]);
+
+  // Query function to fetch students
+  const fetchStudents = async (term: string, currentLibraryId: string) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, name')
+      .eq('library_id', currentLibraryId)
+      .ilike('name', `%${term}%`)
+      .limit(5);
+
+    if (error) {
+      throw error;
+    }
+    return data || [];
+  };
+
+  // TanStack Query for student lookup
+  const { data: students, isLoading, isError, error } = useQuery<Student[], Error>({
+    queryKey: ['studentLookup', debouncedSearchTerm, libraryId],
+    queryFn: () => fetchStudents(debouncedSearchTerm, libraryId!),
+    enabled: !!user && !!libraryId && debouncedSearchTerm.trim().length >= 2, // Only run query if conditions met
+    staleTime: 1000 * 30, // 30 seconds stale time for search results
+    gcTime: 1000 * 60 * 5, // 5 minutes garbage collection time
+  });
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Student Lookup</CardTitle>
+        <CardDescription>Search for a student by name or phone number.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <Input
             type="text"
             placeholder="Search for a student..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={rawSearchTerm}
+            onChange={(e) => setRawSearchTerm(e.target.value)}
             className="w-full"
           />
-          {loading && <div className="flex justify-center"><LoadingSpinner /></div>}
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {isLoading && <div className="flex justify-center"><LoadingSpinner /></div>}
+          {isError && <p className="text-sm text-red-500">{error?.message || 'Failed to fetch students.'}</p>}
           <ul className="space-y-2">
-            {students.map((student) => (
+            {students?.map((student) => (
               <li key={student.id} className="border p-2 rounded-md text-sm hover:bg-muted">
                 <Link href={`/dashboard/students/${student.id}`} className="block">
                   {student.name}
                 </Link>
               </li>
             ))}
-            {searchTerm.trim().length >= 2 && !loading && students.length === 0 && (
+            {debouncedSearchTerm.trim().length >= 2 && !isLoading && students?.length === 0 && (
               <p className="text-sm text-muted-foreground text-center">No students found.</p>
             )}
           </ul>

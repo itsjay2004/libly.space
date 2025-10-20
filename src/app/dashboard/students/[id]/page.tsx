@@ -11,7 +11,8 @@ import ClientStudentActions from '@/components/students/client-student-actions';
 import AddPaymentForm from '@/components/payments/add-payment-form';
 import { format, isFuture } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
-import { useUser } from '@/hooks/use-user';
+// --- MODIFICATION: Use the shared context hook ---
+import { useSharedUser } from '@/contexts/UserContext'; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
     Breadcrumb,
@@ -21,33 +22,29 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-// --- MODIFICATION: Importing a more specific type ---
 import type { StudentWithShift } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
-// Create the Supabase client once, outside the component
 const supabase = createClient();
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const studentId = params.id;
 
-  const { user, isLoading: userLoading } = useUser();
-  // --- MODIFICATION: Using the more specific type ---
+  // --- MODIFICATION: Get user data from shared context ---
+  const { user, libraryId, isUserLoading } = useSharedUser();
   const [student, setStudent] = useState<StudentWithShift | null>(null);
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  // Renamed for clarity
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchStudentData = useCallback(async () => {
-    if (!user) return;
+    // --- MODIFICATION: Use libraryId from shared context ---
+    if (!user || !libraryId) return;
 
     setLoadingStudent(true);
     setFetchError(null);
 
-    // --- OPTIMIZATION: Removed `payments (*)` from the select query ---
-    // This now only fetches the student and their shift details, making it much faster.
     const { data: studentData, error: studentError } = await supabase
       .from('students')
       .select(`
@@ -55,6 +52,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
         shifts (*)
       `)
       .eq('id', studentId)
+      .eq('library_id', libraryId) // Ensure student belongs to the user's library
       .single();
 
     if (studentError || !studentData) {
@@ -64,20 +62,23 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
       setStudent(studentData);
     }
     setLoadingStudent(false);
-  }, [user, studentId]);
+  }, [user, libraryId, studentId]); // Add libraryId to dependencies
 
   useEffect(() => {
-    if (!userLoading && user) {
+    if (!isUserLoading && user) {
       fetchStudentData();
+    } else if (!isUserLoading && !user) {
+        // Handle case where user logs out or is not authenticated
+        setLoadingStudent(false);
+        setFetchError("Please log in to view student profiles.");
     }
-  }, [userLoading, user, fetchStudentData, refreshTrigger]);
+  }, [isUserLoading, user, fetchStudentData, refreshTrigger]);
   
-  // This function will be called by child components to trigger a data refresh
   const handleDataRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
   
-  if (userLoading || loadingStudent) {
+  if (isUserLoading || loadingStudent) {
     return <StudentProfileSkeleton />;
   }
 
@@ -85,6 +86,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
     return <p className="text-center text-red-500">Error: {fetchError}</p>;
   }
 
+  // If student is null and not loading, means not found or access denied
   if (!student) {
     notFound();
   }
@@ -102,11 +104,10 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                     <BreadcrumbItem><BreadcrumbPage>{student.name}</BreadcrumbPage></BreadcrumbItem>
                 </BreadcrumbList>
             </Breadcrumb>
-            <ClientStudentActions student={student} />
+            <ClientStudentActions student={student} onActionComplete={handleDataRefresh} />
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
-            {/* Left Column */}
             <div className="md:col-span-1 flex flex-col gap-6">
                 <Card>
                     <CardContent className="pt-6 flex flex-col items-center text-center">
@@ -163,7 +164,6 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 </Card>
             </div>
 
-            {/* Right Column */}
             <div className="md:col-span-2 flex flex-col gap-6">
                 <AddPaymentForm 
                   libraryId={student.library_id}
@@ -177,7 +177,6 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                         <CardDescription>A complete record of all payments for {student.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {/* --- MODIFICATION: Pass studentId to make it self-sufficient --- */}
                         <PaymentsList studentId={student.id} onPaymentDeleted={handleDataRefresh} />
                     </CardContent>
                 </Card>

@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, addDays, isFuture } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '@/components/ui/separator';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
@@ -34,10 +35,7 @@ interface AddPaymentFormProps {
 export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess }: AddPaymentFormProps) {
   const { toast } = useToast();
   const supabase = createClient();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [studentShift, setStudentShift] = useState<Shift | null>(null);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof paymentFormSchema>>({
     resolver: zodResolver(paymentFormSchema),
@@ -51,49 +49,51 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
   const watchedAmount = form.watch('amount');
   const watchedStudentId = form.watch('studentId');
 
-  useEffect(() => {
-    if (!studentId) {
-      setIsLoadingStudents(true);
-      const fetchStudents = async () => {
-        const { data, error } = await supabase.from('students').select('id, name, phone').eq('library_id', libraryId);
-        if (error) toast({ title: "Error fetching students", description: error.message, variant: "destructive" });
-        else setStudents(data || []);
-        setIsLoadingStudents(false);
-      };
-      fetchStudents();
-    }
-  }, [libraryId, studentId, supabase, toast]);
+  // Query to fetch all students (if studentId is not pre-selected)
+  const { data: students = [], isLoading: isLoadingStudents } = useQuery<Student[]>({ // Add type annotation here
+    queryKey: ['students', libraryId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('id, name, phone').eq('library_id', libraryId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !studentId, // Only fetch if studentId is NOT provided as a prop
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  // Query to fetch details for a specific student and their shift
+  const { data: selectedStudentDetails, isLoading: isLoadingStudentDetails } = useQuery<Student & { shifts: Shift | null }>({ // Add type annotation here
+    queryKey: ['studentDetails', watchedStudentId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('students').select('*, shifts(*)').eq('id', watchedStudentId).single();
+      if (error) throw error;
+      return data as Student & { shifts: Shift | null }; // Cast to combined type
+    },
+    enabled: !!watchedStudentId, // Only fetch if a student is selected
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const selectedStudent = selectedStudentDetails;
+  const studentShift = selectedStudentDetails?.shifts || null;
 
   useEffect(() => {
-    const fetchStudentAndShiftDetails = async () => {
-      if (!watchedStudentId) {
-        setSelectedStudent(null);
-        setStudentShift(null);
-        return;
-      }
-      const { data: studentData, error } = await supabase.from('students').select('*, shifts(*)').eq('id', watchedStudentId).single();
-      if (error) {
-        toast({ title: "Error fetching student details", description: error.message, variant: "destructive" });
-        setSelectedStudent(null);
-        setStudentShift(null);
-      } else {
-        setSelectedStudent(studentData);
-        setStudentShift(studentData.shifts);
-      }
-    };
-    fetchStudentAndShiftDetails();
-  }, [watchedStudentId, supabase, toast]);
+    // When a student is pre-selected via prop, set the form value
+    if (studentId) {
+      form.setValue('studentId', studentId);
+    }
+  }, [studentId, form]);
+
 
   const { startDate, expiryDate } = useMemo(() => {
     if (!selectedStudent || !studentShift?.fee) return { startDate: null, expiryDate: null };
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const currentExpiry = selectedStudent.membership_expiry_date ? new Date(selectedStudent.membership_expiry_date) : null;
     const sDate = currentExpiry && isFuture(currentExpiry) ? currentExpiry : today;
 
-    if (watchedAmount > 0) {
+    if (watchedAmount && watchedAmount > 0) {
       const feePerDay = Number(studentShift.fee) / 30;
       if (feePerDay > 0) {
         const durationDays = Math.floor(watchedAmount / feePerDay);
@@ -104,40 +104,59 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     return { startDate: sDate, expiryDate: null };
   }, [watchedAmount, selectedStudent, studentShift]);
 
-  const onSubmit = async (values: z.infer<typeof paymentFormSchema>) => {
-    if (!startDate || !expiryDate) {
-      toast({ title: "Calculation Error", description: "Start or Expiry date could not be calculated.", variant: "destructive" });
-      return;
-    }
-    
-    const todayStr = new Date().toISOString().split('T')[0];
+  const addPaymentMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof paymentFormSchema>) => {
+      if (!startDate || !expiryDate) {
+        throw new Error("Calculation Error: Start or Expiry date could not be calculated.");
+      }
 
-    const { error: paymentError } = await supabase.from('payments').insert({
-      student_id: values.studentId,
-      library_id: libraryId,
-      amount: values.amount,
-      payment_date: todayStr,
-      payment_method: values.payment_method,
-      membership_start_date: startDate.toISOString().split('T')[0],
-      membership_end_date: expiryDate.toISOString().split('T')[0],
-    });
-    if (paymentError) {
-      toast({ title: "Error Recording Payment", description: paymentError.message, variant: "destructive" });
-      return;
-    }
+      const todayStr = new Date().toISOString().split('T')[0];
 
-    const { error: studentUpdateError } = await supabase.from('students').update({ membership_expiry_date: expiryDate.toISOString().split('T')[0] }).eq('id', values.studentId);
-    if (studentUpdateError) {
-      toast({ title: "Error Updating Student Status", description: `Payment was recorded, but failed to update student's expiry. Please correct manually. Error: ${studentUpdateError.message}`, variant: "destructive", duration: 7000 });
-    } else {
+      const { error: paymentError } = await supabase.from('payments').insert({
+        student_id: values.studentId,
+        library_id: libraryId,
+        amount: values.amount,
+        payment_date: todayStr,
+        payment_method: values.payment_method,
+        membership_start_date: startDate.toISOString().split('T')[0],
+        membership_end_date: expiryDate.toISOString().split('T')[0],
+      });
+      if (paymentError) {
+        throw paymentError;
+      }
+
+      const { error: studentUpdateError } = await supabase.from('students').update({ membership_expiry_date: expiryDate.toISOString().split('T')[0] }).eq('id', values.studentId);
+      if (studentUpdateError) {
+        throw new Error(`Payment was recorded, but failed to update student's expiry. Please correct manually. Error: ${studentUpdateError.message}`);
+      }
+    },
+    onSuccess: (_, variables) => {
       toast({
         title: 'Payment Recorded Successfully',
-        description: `Membership for ${selectedStudent?.name} is now active until ${format(expiryDate, "PPP")}.`,
+        description: `Membership for ${selectedStudent?.name} is now active until ${format(expiryDate!, "PPP")}.`,
       });
       form.reset({ studentId: studentId, amount: undefined, payment_method: "Cash" });
       onPaymentSuccess?.();
+
+      // Invalidate relevant queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['studentCount', libraryId] });
+      queryClient.invalidateQueries({ queryKey: ['payments', libraryId] }); // Assuming a payments list query
+      queryClient.invalidateQueries({ queryKey: ['studentDetails', variables.studentId] }); // Invalidate specific student's details
+      queryClient.invalidateQueries({ queryKey: ['students', libraryId] }); // Invalidate all students list
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', libraryId] }); // Invalidate dashboard stats if they rely on this
+      // Potentially other dashboard related queries like expiringSoonList etc.
+    },
+    onError: (error: any) => {
+      toast({ title: "Error Recording Payment", description: error.message, variant: "destructive", duration: 7000 });
     }
+  });
+
+  const onSubmit = (values: z.infer<typeof paymentFormSchema>) => {
+    addPaymentMutation.mutate(values);
   };
+
+  const displayStudents = studentId ? (selectedStudent ? [selectedStudent] : []) : students;
+  const displayLoadingStudents = studentId ? isLoadingStudentDetails : isLoadingStudents;
 
   return (
     <Card>
@@ -157,11 +176,11 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                     <FormLabel>Student</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <FormControl><Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>{field.value ? students.find((s) => s.id === field.value)?.name : "Select a student"}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></FormControl>
+                        <FormControl><Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>{field.value ? displayStudents.find((s) => s.id === field.value)?.name : "Select a student"}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command><CommandInput placeholder="Search student..." /><CommandList><CommandEmpty>{isLoadingStudents ? 'Loading...' : 'No student found.'}</CommandEmpty><CommandGroup>
-                          {students.map((s) => (<CommandItem value={s.name} key={s.id} onSelect={() => form.setValue("studentId", s.id, { shouldValidate: true })}><Check className={cn("mr-2 h-4 w-4", s.id === field.value ? "opacity-100" : "opacity-0")}/><div><p>{s.name}</p><p className="text-xs text-muted-foreground">{s.phone}</p></div></CommandItem>))}
+                        <Command><CommandInput placeholder="Search student..." /><CommandList><CommandEmpty>{displayLoadingStudents ? 'Loading...' : 'No student found.'}</CommandEmpty><CommandGroup>
+                          {displayStudents.map((s) => (<CommandItem value={s.name} key={s.id} onSelect={() => form.setValue("studentId", s.id, { shouldValidate: true })}><Check className={cn("mr-2 h-4 w-4", s.id === field.value ? "opacity-100" : "opacity-0")} /><div><p>{s.name}</p><p className="text-xs text-muted-foreground">{s.phone}</p></div></CommandItem>))}
                         </CommandGroup></CommandList></Command>
                       </PopoverContent>
                     </Popover>
@@ -182,7 +201,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="payment_method"
@@ -206,46 +225,46 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                 </FormItem>
               )}
             />
-            
+
             {selectedStudent && (
-                 <Card className="bg-muted/50">
-                    <CardHeader className="pb-4"><CardTitle className="text-base">Membership Summary</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        {studentShift?.fee && (
-                            <div className="flex justify-between items-center text-sm">
-                                <p className="text-muted-foreground">Shift Fee (Monthly)</p>
-                                <p className="font-medium">₹{Number(studentShift.fee).toLocaleString()}</p>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center text-sm">
-                            <p className="text-muted-foreground">Current Expiry</p>
-                            <p className="font-medium">{selectedStudent.membership_expiry_date ? format(new Date(selectedStudent.membership_expiry_date), 'PPP') : 'N/A'}</p>
-                        </div>
+              <Card className="bg-muted/50">
+                <CardHeader className="pb-4"><CardTitle className="text-base">Membership Summary</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {studentShift?.fee && (
+                    <div className="flex justify-between items-center text-sm">
+                      <p className="text-muted-foreground">Shift Fee (Monthly)</p>
+                      <p className="font-medium">₹{Number(studentShift.fee).toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-sm">
+                    <p className="text-muted-foreground">Current Expiry</p>
+                    <p className="font-medium">{selectedStudent.membership_expiry_date ? format(new Date(selectedStudent.membership_expiry_date), 'PPP') : 'N/A'}</p>
+                  </div>
 
-                        <Separator />
+                  <Separator />
 
-                        <div className="flex justify-between items-center text-sm font-semibold">
-                            <div className='text-center'>
-                                <p className="text-xs text-muted-foreground font-normal">Starts On</p>
-                                {startDate ? format(startDate, 'PPP') : '-'}
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                             <div className='text-center text-green-600'>
-                                <p className="text-xs text-muted-foreground font-normal">New Expiry Date</p>
-                                {expiryDate ? format(expiryDate, 'PPP') : '-'}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                  <div className="flex justify-between items-center text-sm font-semibold">
+                    <div className='text-center'>
+                      <p className="text-xs text-muted-foreground font-normal">Starts On</p>
+                      {startDate ? format(startDate, 'PPP') : '-'}
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <div className='text-center text-green-600'>
+                      <p className="text-xs text-muted-foreground font-normal">New Expiry Date</p>
+                      {expiryDate ? format(expiryDate, 'PPP') : '-'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             <p className="text-xs text-center text-muted-foreground pt-2 flex items-center justify-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                <span>Payment date: <strong>{format(new Date(), 'PPP')}</strong></span>
+              <CalendarDays className="h-4 w-4" />
+              <span>Payment date: <strong>{format(new Date(), 'PPP')}</strong></span>
             </p>
 
-            <Button type="submit" className="w-full" disabled={!expiryDate || form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Recording...' : 'Record Payment'}
+            <Button type="submit" className="w-full" disabled={!expiryDate || addPaymentMutation.isPending}>
+              {addPaymentMutation.isPending ? 'Recording...' : 'Record Payment'}
             </Button>
           </form>
         </Form>
