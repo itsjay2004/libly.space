@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Student, Shift } from '@/lib/types';
@@ -21,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
+  payment_method: z.string({ required_error: 'Please select a payment method.' }),
 });
 
 interface AddPaymentFormProps {
@@ -42,6 +44,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     defaultValues: {
       studentId: studentId,
       amount: undefined,
+      payment_method: 'Cash',
     },
   });
 
@@ -114,6 +117,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       library_id: libraryId,
       amount: values.amount,
       payment_date: todayStr,
+      payment_method: values.payment_method,
       membership_start_date: startDate.toISOString().split('T')[0],
       membership_end_date: expiryDate.toISOString().split('T')[0],
     });
@@ -130,7 +134,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
         title: 'Payment Recorded Successfully',
         description: `Membership for ${selectedStudent?.name} is now active until ${format(expiryDate, "PPP")}.`,
       });
-      form.reset({ studentId: studentId, amount: undefined });
+      form.reset({ studentId: studentId, amount: undefined, payment_method: "Cash" });
       onPaymentSuccess?.();
     }
   };
@@ -179,6 +183,30 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
               )}
             />
             
+            <FormField
+              control={form.control}
+              name="payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a payment method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="UPI">UPI</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Card">Card</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             {selectedStudent && (
                  <Card className="bg-muted/50">
                     <CardHeader className="pb-4"><CardTitle className="text-base">Membership Summary</CardTitle></CardHeader>
@@ -213,7 +241,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
 
             <p className="text-xs text-center text-muted-foreground pt-2 flex items-center justify-center gap-2">
                 <CalendarDays className="h-4 w-4" />
-                <span>Payment will be recorded for today: <strong>{format(new Date(), 'PPP')}</strong></span>
+                <span>Payment date: <strong>{format(new Date(), 'PPP')}</strong></span>
             </p>
 
             <Button type="submit" className="w-full" disabled={!expiryDate || form.formState.isSubmitting}>

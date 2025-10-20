@@ -1,153 +1,109 @@
-"use client";
+'use client';
 
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Skeleton } from "@/components/ui/skeleton";
-import { createClient } from "@/lib/supabase/client";
-import { useUser } from "@/hooks/use-user";
-import type { Student } from "@/lib/types";
+import React, { useState, useRef, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/use-user';
+import { Input } from '@/components/ui/input';
+import LoadingSpinner from '@/components/ui/loading-spinner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
+
+// --- No longer needs to be async, it's a client component hook ---
+interface Student {
+  id: string;
+  name: string;
+}
 
 export default function StudentLookup() {
-  const router = useRouter();
-  const [students, setStudents] = React.useState<Student[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const { user, isLoading: userLoading } = useUser();
+  const { user, libraryId } = useUser(); // Using the optimized useUser hook
+  const [searchTerm, setSearchTerm] = useState('');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Using useRef to manage the debounce timeout
-  const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const fetchStudents = useCallback(async (term: string) => {
+    if (!user || !libraryId) {
+      // Don't set an error here, just don't fetch if user/library isn't ready
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+
+    const { data, error: fetchError } = await supabase
+      .from('students')
+      .select('id, name')
+      .eq('library_id', libraryId)
+      .ilike('name', `%${term}%`)
+      .limit(5); // Limit results to a reasonable number for a lookup
+
+    if (fetchError) {
+      console.error('Error fetching students:', fetchError);
+      setError('Failed to fetch students.');
+      setStudents([]);
+    } else {
+      setStudents(data || []);
+    }
+
+    setLoading(false);
+  }, [user, libraryId]);
 
   React.useEffect(() => {
-    // Clear any existing timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
 
-    if (searchTerm.trim() === '') {
-      // If search term is empty, clear students and stop loading immediately
+    // --- FIX: Only search when the user has typed something (e.g., 2+ chars) ---
+    // This prevents any request from firing on the initial page load.
+    if (searchTerm.trim().length < 2) {
       setStudents([]);
       setLoading(false);
       setError(null);
-      return; // Do not proceed with fetching
+      return;
     }
 
-    // Set a new timeout to fetch students after a delay
     debounceTimeoutRef.current = setTimeout(() => {
-      if (user && !userLoading) {
-        fetchStudents();
-      } else if (!user && !userLoading) {
-        // If user is not logged in after loading, clear students and set error
-        setStudents([]);
-        setError("Please log in to search for students.");
-        setLoading(false);
-      }
-    }, 300);
+      fetchStudents(searchTerm);
+    }, 500); // 500ms debounce to avoid excessive requests while typing
 
-    // Cleanup function to clear timeout if component unmounts or searchTerm changes
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [searchTerm, user, userLoading]);
-
-  const fetchStudents = async () => {
-    setLoading(true);
-    setError(null);
-    const supabase = createClient();
-    
-    // Ensure user is available before proceeding
-    if (!user) {
-        setError("User not logged in.");
-        setLoading(false);
-        setStudents([]);
-        return;
-    }
-
-    const { data: libraryData, error: libraryError } = await supabase
-      .from('libraries')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single();
-
-    if (libraryError || !libraryData) {
-      console.error("Error fetching library for student lookup:", libraryError);
-      setError("Could not load students: Library not found.");
-      setStudents([]);
-      setLoading(false);
-      return;
-    }
-
-    const libraryId = libraryData.id;
-    const searchPattern = `%${searchTerm.toLowerCase()}%`; // Use current searchTerm for fetching
-
-    const { data, error: studentsFetchError } = await supabase
-      .from('students')
-      .select('id, name, phone') 
-      .eq('library_id', libraryId)
-      .or(`name.ilike.${searchPattern},phone.ilike.${searchPattern}`)
-      .order('name', { ascending: true });
-
-    if (studentsFetchError) {
-      console.error("Error fetching students:", studentsFetchError);
-      setError("Failed to load students.");
-      setStudents([]);
-    } else {
-      setStudents(data || []);
-    }
-    setLoading(false);
-  };
-
-  const handleSelect = (studentId: string) => {
-    router.push(`/dashboard/students/${studentId}`);
-    setSearchTerm(''); // Clear search term after selection
-    setStudents([]); // Clear displayed students
-  };
+  }, [searchTerm, fetchStudents]);
 
   return (
-    <Card className="w-full"> 
+    <Card>
       <CardHeader>
         <CardTitle>Student Lookup</CardTitle>
-        <CardDescription>Search for a student by name or phone number.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Command shouldFilter={false}> 
-          <CommandInput 
-            placeholder="Search student by name or phone..." 
+        <div className="space-y-4">
+          <Input
+            type="text"
+            placeholder="Search for a student..."
             value={searchTerm}
-            onValueChange={setSearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
           />
-          <CommandList>
-            {(userLoading || (loading && searchTerm.trim() !== '')) && (
-                <div className="p-2 space-y-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                </div>
+          {loading && <div className="flex justify-center"><LoadingSpinner /></div>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <ul className="space-y-2">
+            {students.map((student) => (
+              <li key={student.id} className="border p-2 rounded-md text-sm hover:bg-muted">
+                <Link href={`/dashboard/students/${student.id}`} className="block">
+                  {student.name}
+                </Link>
+              </li>
+            ))}
+            {searchTerm.trim().length >= 2 && !loading && students.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center">No students found.</p>
             )}
-            
-            {!user && !userLoading && <p className="p-2 text-sm text-center text-destructive">Please log in to search for students.</p>}
-            {error && <p className="p-2 text-sm text-center text-destructive">Error: {error}</p>}
-            
-            {(!loading && !error && students.length === 0 && searchTerm.trim() === '' && user && !userLoading) && <CommandEmpty>Start typing to search for students.</CommandEmpty>}
-            {(!loading && !error && students.length === 0 && searchTerm.trim() !== '' && user && !userLoading) && <CommandEmpty>No students found for "{searchTerm}".</CommandEmpty>}
-            
-            <CommandGroup>
-              {!loading && !error && students.length > 0 && students.map((student) => (
-                <CommandItem
-                  key={student.id}
-                  value={`${student.name} ${student.phone}`}
-                  onSelect={() => handleSelect(student.id)}
-                >
-                  {student.name} ({student.phone})
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );

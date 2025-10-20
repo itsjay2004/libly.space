@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { notFound, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, Calendar as CalendarIconLucid, Armchair, CalendarCheck2 } from 'lucide-react';
 import PaymentsList from '@/components/payments/payments-list';
 import ClientStudentActions from '@/components/students/client-student-actions';
-import AddPaymentForm from '@/components/payments/add-payment-form'; // UPDATED IMPORT
+import AddPaymentForm from '@/components/payments/add-payment-form';
 import { format, isFuture } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '@/hooks/use-user';
@@ -22,19 +21,24 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import type { StudentWithRelations } from '@/lib/types'; // Assuming you have a type like this
+// --- MODIFICATION: Importing a more specific type ---
+import type { StudentWithShift } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+
+// Create the Supabase client once, outside the component
+const supabase = createClient();
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const studentId = params.id;
 
   const { user, isLoading: userLoading } = useUser();
-  const [student, setStudent] = useState<StudentWithRelations | null>(null);
+  // --- MODIFICATION: Using the more specific type ---
+  const [student, setStudent] = useState<StudentWithShift | null>(null);
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  // Renamed for clarity
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const supabase = createClient();
 
   const fetchStudentData = useCallback(async () => {
     if (!user) return;
@@ -42,12 +46,13 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
     setLoadingStudent(true);
     setFetchError(null);
 
+    // --- OPTIMIZATION: Removed `payments (*)` from the select query ---
+    // This now only fetches the student and their shift details, making it much faster.
     const { data: studentData, error: studentError } = await supabase
       .from('students')
       .select(`
         *,
-        shifts (*),
-        payments (*)
+        shifts (*)
       `)
       .eq('id', studentId)
       .single();
@@ -59,20 +64,21 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
       setStudent(studentData);
     }
     setLoadingStudent(false);
-  }, [user, studentId, supabase]);
+  }, [user, studentId]);
 
   useEffect(() => {
-    if (!userLoading) {
+    if (!userLoading && user) {
       fetchStudentData();
     }
   }, [userLoading, user, fetchStudentData, refreshTrigger]);
   
-  const handlePaymentSuccess = () => {
-    setRefreshTrigger(prev => prev + 1); // Trigger a re-fetch
+  // This function will be called by child components to trigger a data refresh
+  const handleDataRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
   
   if (userLoading || loadingStudent) {
-    return <StudentProfileSkeleton />; // Use a skeleton component for loading
+    return <StudentProfileSkeleton />;
   }
 
   if (fetchError) {
@@ -162,7 +168,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 <AddPaymentForm 
                   libraryId={student.library_id}
                   studentId={student.id}
-                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentSuccess={handleDataRefresh}
                 />
 
                 <Card>
@@ -171,7 +177,8 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                         <CardDescription>A complete record of all payments for {student.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <PaymentsList payments={student.payments || []} onPaymentDeleted={handlePaymentSuccess} />
+                        {/* --- MODIFICATION: Pass studentId to make it self-sufficient --- */}
+                        <PaymentsList studentId={student.id} onPaymentDeleted={handleDataRefresh} />
                     </CardContent>
                 </Card>
             </div>

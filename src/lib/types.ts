@@ -14,7 +14,7 @@ export interface Student {
 }
 
 export interface Shift {
-  id?: string;
+  id: string;
   library_id?: string;
   name: string;
   start_time: string;

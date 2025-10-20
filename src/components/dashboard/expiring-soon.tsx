@@ -1,104 +1,66 @@
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from "@/components/ui/card"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import Link from "next/link";
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
-import { format, addDays, startOfToday } from 'date-fns';
-import type { Student } from '@/lib/types';
+'use client';
 
-export default async function ExpiringSoon() {
-  const cookieStore = cookies();
-  const supabase = createClient();
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format, differenceInDays } from "date-fns";
+import Link from 'next/link';
 
-  const { data: { user } } = await supabase.auth.getUser();
+// --- MODIFICATION: Define a specific type for the students this component receives ---
+interface ExpiringStudent {
+    id: string;
+    name: string;
+    membership_expiry_date: string;
+}
 
-  if (!user) {
-    return null;
-  }
+interface ExpiringSoonProps {
+    // --- MODIFICATION: This component now receives its data as a prop ---
+    expiringStudents: ExpiringStudent[];
+}
 
-  const { data: libraryData, error: libraryError } = await supabase
-    .from('libraries')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single();
+// --- MODIFICATION: The component is now a standard functional component ---
+export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
 
-  if (libraryError || !libraryData) {
-    console.error("Dashboard Widget Error: Could not fetch library.", libraryError);
-    return null;
-  }
+    // --- REMOVED: All `useState`, `useEffect`, `useCallback` and data fetching logic ---
+    // The component is now much simpler and only responsible for displaying data.
 
-  const today = startOfToday();
-  const sevenDaysFromNow = addDays(today, 7);
+    const getDaysLeftText = (expiryDate: string) => {
+        const days = differenceInDays(new Date(expiryDate), new Date());
+        if (days < 0) return 'Expired';
+        if (days === 0) return 'Expires today';
+        if (days === 1) return 'Expires in 1 day';
+        return `Expires in ${days} days`;
+    };
 
-  const { data: expiringStudents, error: studentsError } = await supabase
-    .from('students')
-    .select('id, name, phone, membership_expiry_date')
-    .eq('library_id', libraryData.id)
-    .gte('membership_expiry_date', today.toISOString())
-    .lte('membership_expiry_date', sevenDaysFromNow.toISOString())
-    .order('membership_expiry_date', { ascending: true });
-    
-  if (studentsError) {
-    console.error("Dashboard Widget Error: Could not fetch expiring students.", studentsError);
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Memberships Expiring Soon</CardTitle>
-                <CardDescription>Students whose membership is expiring in the next 7 days.</CardDescription>
+                <CardTitle>Expiring Soon</CardTitle>
+                <CardDescription>Students whose memberships are ending in the next 10 days.</CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="text-sm text-red-500 text-center py-4">Could not load student data.</p>
+                {expiringStudents && expiringStudents.length > 0 ? (
+                    <div className="space-y-4">
+                        {expiringStudents.map((student) => (
+                            <Link href={`/dashboard/students/${student.id}`} key={student.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted transition-colors">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
+                                    <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold">{student.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {getDaysLeftText(student.membership_expiry_date)}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-sm text-muted-foreground py-8">
+                        No memberships are expiring soon.
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Memberships Expiring Soon</CardTitle>
-        <CardDescription>Students whose membership is expiring in the next 7 days.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {expiringStudents && expiringStudents.length > 0 ? (
-            expiringStudents.map((student) => (
-            <div key={student.id} className="flex items-center">
-              <Avatar className="h-9 w-9">
-                 <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
-                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="ml-4 space-y-1">
-                <p className="text-sm font-medium leading-none">{student.name}</p>
-                <p className="text-sm text-muted-foreground">{student.phone}</p>
-              </div>
-              <div className="ml-auto flex items-center gap-2">
-                <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Expires on</p>
-                    <p className="text-sm font-medium">
-                        {student.membership_expiry_date ? format(new Date(student.membership_expiry_date), 'dd MMM yyyy') : 'N/A'}
-                    </p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/students/${student.id}`}>View</Link>
-                </Button>
-              </div>
-            </div>
-            ))
-        ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">No memberships are expiring in the next 7 days.</p>
-        )}
-      </CardContent>
-    </Card>
-  )
 }

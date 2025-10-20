@@ -126,7 +126,8 @@ create table payments (
   amount numeric(10, 2) not null,
   payment_date date not null default current_date,
   membership_start_date date,
-  membership_end_date date
+  membership_end_date date,
+  payment_method text
 );
 -- Add RLS to payments table
 alter table payments
