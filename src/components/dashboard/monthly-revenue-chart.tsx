@@ -2,6 +2,7 @@
 
 import { TrendingUp } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { subMonths, format } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -28,6 +29,23 @@ export default function MonthlyRevenueChart({ data }: MonthlyRevenueChartProps) 
     },
   }
 
+  // --- START: FIX for 6-month view ---
+  // 1. Generate the last 6 months' labels (e.g., "May 2024", "Jun 2024", ...)
+  const today = new Date();
+  const last6Months = Array.from({ length: 6 }, (_, i) => {
+    return format(subMonths(today, 5 - i), 'MMM yyyy');
+  });
+
+  // 2. Create a map of the existing data for quick lookups
+  const revenueDataMap = new Map(data.map(item => [item.month, item.total]));
+
+  // 3. Create the final chart data, ensuring all 6 months are present
+  const chartData = last6Months.map(monthStr => ({
+    month: monthStr,
+    total: revenueDataMap.get(monthStr) || 0,
+  }));
+  // --- END: FIX for 6-month view ---
+
   return (
     <Card>
       <CardHeader>
@@ -37,7 +55,8 @@ export default function MonthlyRevenueChart({ data }: MonthlyRevenueChartProps) 
       <CardContent>
         <ChartContainer config={chartConfig} className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} accessibilityLayer>
+                {/* Pass the processed chartData to the BarChart */}
+                <BarChart data={chartData} accessibilityLayer>
                     <CartesianGrid vertical={false} />
                     <XAxis
                     dataKey="month"
