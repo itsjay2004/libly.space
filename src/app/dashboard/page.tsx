@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { format } from 'date-fns';
 import { Users, TrendingUp, PiggyBank, UserX } from 'lucide-react';
-// --- FIX: Using the correct SERVER function ---
 import { fetchDashboardStatsSERVER, DashboardStats } from '@/lib/supabase/dashboard'; 
 
 import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
@@ -11,7 +10,7 @@ import StatsCard from '@/components/dashboard/stats-card';
 import StudentLookup from '@/components/dashboard/student-lookup';
 import ExpiringSoon from '@/components/dashboard/expiring-soon';
 import MonthlyRevenueChart from '@/components/dashboard/monthly-revenue-chart';
-import PaymentMethodChart from '@/components/dashboard/payment-method-chart'; // Import PaymentMethodChart
+import PaymentMethodChart from '@/components/dashboard/payment-method-chart';
 import { CustomLink } from '@/components/ui/custom-link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +24,6 @@ async function DashboardData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return <p>Please log in to view the dashboard.</p>;
 
-  // Library check is now handled inside the stats function, but we still need id for QuickAddPayment
   const { data: libraryData, error: libraryError } = await supabase
     .from('libraries')
     .select('id, total_seats')
@@ -43,15 +41,12 @@ async function DashboardData() {
   }
 
   const { id: libraryId, total_seats } = libraryData;
-
-  // --- FIX: A single, correct call to the server-side helper ---
   const stats: DashboardStats | null = await fetchDashboardStatsSERVER();
 
   if (!stats) {
     return <p>Error loading dashboard data. Please try again later.</p>;
   }
   
-  // Occupancy rate calculation remains client-side as it depends on `total_seats`
   const occupancyRate = total_seats > 0 ? Math.round((stats.occupiedSeats / total_seats) * 100) : 0;
   
   const monthlyRevenueForChart = stats.revenueChartData.map(d => ({
@@ -59,7 +54,6 @@ async function DashboardData() {
     total: d.revenue
   }));
 
-  // Map paymentMethodStats to the format expected by PaymentMethodChart
   const paymentMethodChartData = stats.paymentMethodStats.map(pm => ({
     payment_method: pm.payment_method,
     total: pm.total_amount,
@@ -67,7 +61,7 @@ async function DashboardData() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card className="quick-actions-card border">
         <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
                 <h2 className="text-xl font-semibold">Quick Actions</h2>
@@ -81,21 +75,19 @@ async function DashboardData() {
       </Card>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Active Members" value={stats.activeMembers.toString()} icon={<Users />} description="Students with an active membership." />
-        <StatsCard title="Occupancy Rate" value={`${occupancyRate}%`} icon={<TrendingUp />} description={`${stats.occupiedSeats} of ${total_seats || 0} seats filled.`} />
-        <StatsCard title="This Month's Revenue" value={`₹${stats.monthlyRevenue.toLocaleString()}`} icon={<PiggyBank />} description={`Total collection for ${format(new Date(), 'MMMM')}.`} />
-        <StatsCard title="Expiring Soon" value={stats.expiringSoonCount.toString()} icon={<UserX />} description="Memberships ending in the next 10 days." />
+        <StatsCard title="Active Members" value={stats.activeMembers.toString()} icon={<Users className="text-blue-500" />} description="Students with an active membership." gradient="gradient-1" />
+        <StatsCard title="Occupancy Rate" value={`${occupancyRate}%`} icon={<TrendingUp className="text-green-500" />} description={`${stats.occupiedSeats} of ${total_seats || 0} seats filled.`} gradient="gradient-2" />
+        <StatsCard title="This Month's Revenue" value={`₹${stats.monthlyRevenue.toLocaleString()}`} icon={<PiggyBank className="text-yellow-500" />} description={`Total collection for ${format(new Date(), 'MMMM')}.`} gradient="gradient-3" />
+        <StatsCard title="Expiring Soon" value={stats.expiringSoonCount.toString()} icon={<UserX className="text-red-500" />} description="Memberships ending in the next 10 days." gradient="gradient-4" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-6">
           <MonthlyRevenueChart data={monthlyRevenueForChart} />
-          {/* StudentLookup is now self-contained and optimized */}
           <StudentLookup /> 
         </div>
         <div className="lg:col-span-1 flex flex-col gap-6">
-          <PaymentMethodChart data={paymentMethodChartData} /> {/* Pass mapped data */}
-          {/* --- FIX: Passing the pre-fetched list to the component --- */}
+          <PaymentMethodChart data={paymentMethodChartData} />
           <ExpiringSoon expiringStudents={stats.expiringSoonList} />
         </div>
       </div>

@@ -4,6 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 interface StatsCardProps {
@@ -11,11 +12,12 @@ interface StatsCardProps {
   value: string;
   icon: ReactNode;
   description: string;
+  gradient?: string;
 }
 
-export default function StatsCard({ title, value, icon, description }: StatsCardProps) {
+export default function StatsCard({ title, value, icon, description, gradient }: StatsCardProps) {
   return (
-    <Card>
+    <Card className={cn("card-gradient", gradient)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}

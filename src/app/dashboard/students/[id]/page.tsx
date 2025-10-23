@@ -5,13 +5,12 @@ import { notFound, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, Calendar as CalendarIconLucid, Armchair, CalendarCheck2 } from 'lucide-react';
+import { Phone, Mail, Calendar as CalendarIconLucid, Armchair, CalendarCheck2, Home, User } from 'lucide-react';
 import PaymentsList from '@/components/payments/payments-list';
 import ClientStudentActions from '@/components/students/client-student-actions';
 import AddPaymentForm from '@/components/payments/add-payment-form';
 import { format, isFuture } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
-// --- MODIFICATION: Use the shared context hook ---
 import { useSharedUser } from '@/contexts/UserContext'; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -31,7 +30,6 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   const router = useRouter();
   const studentId = params.id;
 
-  // --- MODIFICATION: Get user data from shared context ---
   const { user, libraryId, isUserLoading } = useSharedUser();
   const [student, setStudent] = useState<StudentWithShift | null>(null);
   const [loadingStudent, setLoadingStudent] = useState(true);
@@ -39,7 +37,6 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchStudentData = useCallback(async () => {
-    // --- MODIFICATION: Use libraryId from shared context ---
     if (!user || !libraryId) return;
 
     setLoadingStudent(true);
@@ -52,7 +49,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
         shifts (*)
       `)
       .eq('id', studentId)
-      .eq('library_id', libraryId) // Ensure student belongs to the user's library
+      .eq('library_id', libraryId) 
       .single();
 
     if (studentError || !studentData) {
@@ -62,13 +59,12 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
       setStudent(studentData);
     }
     setLoadingStudent(false);
-  }, [user, libraryId, studentId]); // Add libraryId to dependencies
+  }, [user, libraryId, studentId]); 
 
   useEffect(() => {
     if (!isUserLoading && user) {
       fetchStudentData();
     } else if (!isUserLoading && !user) {
-        // Handle case where user logs out or is not authenticated
         setLoadingStudent(false);
         setFetchError("Please log in to view student profiles.");
     }
@@ -86,7 +82,6 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
     return <p className="text-center text-red-500">Error: {fetchError}</p>;
   }
 
-  // If student is null and not loading, means not found or access denied
   if (!student) {
     notFound();
   }
@@ -112,7 +107,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 <Card>
                     <CardContent className="pt-6 flex flex-col items-center text-center">
                         <Avatar className="h-24 w-24 mb-4">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
+                            <AvatarImage src={`https://api.dicebear.com/9.x/initials/svg?seed=${student.name}&radius=50&backgroundColor=ffd5dc,b6e3f4,c0aede,fdd835,7cb342,43a047&backgroundType=gradientLinear&backgroundRotation=360,0&fontFamily=Garamond&fontWeight=900`} alt={student.name} />
                             <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <h2 className="text-2xl font-semibold">{student.name}</h2>
@@ -141,6 +136,36 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 
                 <Card>
                     <CardHeader>
+                        <CardTitle>Contact Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                        <div className="flex items-center gap-3">
+                            <Phone className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">{student.phone || 'N/A'}</span>
+                        </div>
+                        {student.address && (
+                            <div className="flex items-start gap-3">
+                                <Home className="h-5 w-5 text-muted-foreground mt-1" />
+                                <span className="text-sm">{student.address}</span>
+                            </div>
+                        )}
+                         {student.gender && (
+                            <div className="flex items-center gap-3">
+                                <User className="h-5 w-5 text-muted-foreground" />
+                                <span className="text-sm">{student.gender}</span>
+                            </div>
+                        )}
+                        {student.id_number && (
+                            <div className="flex items-center gap-3">
+                                <p className='text-sm text-muted-foreground'>Aadhar No:</p>
+                                <span className="text-sm">{student.id_number}</span>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
                         <CardTitle>Library Details</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-3">
@@ -156,7 +181,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                             <p className='text-sm text-muted-foreground'>Shift: </p>
                             <span className="text-sm">{student.shifts?.name || 'N/A'} {student.shifts?.start_time && student.shifts?.end_time ? `(${student.shifts.start_time} - ${student.shifts.end_time})` : ''}</span>
                         </div>
-                         <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                              <p className='text-sm text-muted-foreground'>Shift Fee:</p>
                              <span className="text-sm">{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(student.shifts?.fee || 0)}</span>
                         </div>

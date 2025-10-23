@@ -11,7 +11,11 @@ import ImportStatusBanner from '@/components/dashboard/import-status-banner';
 import { menuItems } from '@/constants/menu-items';
 import { Banners } from '@/components/dashboard/Banners';
 
-export function DashboardContent({ children }: { children: ReactNode }) {
+interface DashboardContentProps {
+    children: ReactNode;
+}
+
+export function DashboardContent({ children }: DashboardContentProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, isLoading, userDetails } = useUser();
@@ -25,13 +29,36 @@ export function DashboardContent({ children }: { children: ReactNode }) {
         }
     }, [user, isLoading, router, userDetails]);
 
-    let currentPage = menuItems.find((item) => pathname === item.href);
+    let titleToDisplay: string = "";
+    let descriptionToDisplay: string = "";
 
-    const isDashboardPage = pathname === '/dashboard';
+    // Check for the specific dynamic student profile route
+    if (pathname.startsWith("/dashboard/students/") && pathname !== "/dashboard/students") {
+        titleToDisplay = "Student Profile";
+        descriptionToDisplay = "Detailed view and management of a student's information.";
+    } else if (pathname === "/dashboard") {
+        // Special handling for the exact dashboard home page
+        const dashboardItem = menuItems.find(item => item.href === "/dashboard");
+        titleToDisplay = `👋 Hi ${user?.user_metadata.full_name || "User"}`;
+        descriptionToDisplay = dashboardItem?.description || "";
+    } else {
+        // For all other direct /dashboard/* pages, find the best match
+        // Exclude the root dashboard from this search to allow specific sub-pages to match first
+        let currentPage = menuItems.find((item) => pathname.startsWith(item.href) && item.href !== "/dashboard");
+
+        if (currentPage) {
+            titleToDisplay = currentPage.title;
+            descriptionToDisplay = currentPage.description;
+        } else {
+          // Fallback for unmatched routes, if necessary
+          titleToDisplay = "Dashboard"; // Generic fallback
+          descriptionToDisplay = "View and manage your library data."; // Generic fallback
+        }
+    }
 
     return (
         <div className="h-screen p-2">
-            <div className="bg-white dark:bg-black/80 rounded rounded-2xl h-full flex flex-col">
+            <div className="subtle-gradient dark:bg-zinc-900 rounded-2xl h-full flex flex-col">
                 <header className="flex items-center justify-between h-20 px-4 sm:px-8">
                     <div className="flex justify-between border-b w-full py-4">
                         <div className="flex items-center gap-4">
@@ -39,16 +66,12 @@ export function DashboardContent({ children }: { children: ReactNode }) {
                                 <SidebarTrigger />
                             </div>
                             <div className="">
-                                {currentPage && (
-                                    <>
-                                        <h1 className="text-xl font-bold tracking-tight">{isDashboardPage ? `👋 Hi ${user?.user_metadata.full_name || "User"}` : `${currentPage.title}`} </h1>
-                                        <p className="text-sm text-muted-foreground">{currentPage.description}</p>
-                                    </>
-                                )}
+                                <h1 className="text-xl font-bold tracking-tight">{titleToDisplay} </h1>
+                                {descriptionToDisplay && <p className="text-sm text-muted-foreground">{descriptionToDisplay}</p>}
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-zinc-800">
+                            <Button variant="ghost" size="icon" className="bg-gray-200 dark:bg-zinc-800 rounded-full">
                                 <Bell className="h-5 w-5" />
                             </Button>
                         </div>

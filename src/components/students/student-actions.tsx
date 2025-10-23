@@ -231,7 +231,7 @@ export default function StudentActions({ student, onActionComplete }: { student?
           <Textarea id="address" name="address" defaultValue={student?.address ?? ''} className="col-span-3" />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="id_number" className="text-right">ID Number</Label>
+          <Label htmlFor="id_number" className="text-right">Aadhar No.</Label>
           <Input id="id_number" name="id_number" defaultValue={student?.id_number ?? ''} className="col-span-3" />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">

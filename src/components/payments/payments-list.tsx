@@ -96,6 +96,7 @@ export default function PaymentsList({ studentId, onPaymentDeleted }: PaymentsLi
           <TableRow>
             <TableHead>Membership Period</TableHead>
             <TableHead>Payment Date</TableHead>
+            <TableHead>Pay Method</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -104,7 +105,7 @@ export default function PaymentsList({ studentId, onPaymentDeleted }: PaymentsLi
           {isLoading && payments.length === 0 ? (
             Array.from({ length: 3 }).map((_, i) => (
               <TableRow key={`skeleton-${i}`}>
-                <TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell>
+                <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
               </TableRow>
             ))
           ) : payments.length > 0 ? (
@@ -116,6 +117,7 @@ export default function PaymentsList({ studentId, onPaymentDeleted }: PaymentsLi
                   {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM yyyy") : 'N/A'}
                 </TableCell>
                 <TableCell>{format(new Date(payment.payment_date), "dd MMM yyyy")}</TableCell>
+                <TableCell>{payment.payment_method || 'N/A'}</TableCell>
                 <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                 <TableCell className="text-right">
                   <AlertDialog>
@@ -144,7 +146,7 @@ export default function PaymentsList({ studentId, onPaymentDeleted }: PaymentsLi
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                 No payments found for this student.
               </TableCell>
             </TableRow>

@@ -95,6 +95,7 @@ export default function PaymentsPage() {
                 <TableHead>Student</TableHead>
                 <TableHead>Membership Period</TableHead>
                 <TableHead>Payment Date</TableHead>
+                <TableHead>Pay Method</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
               </TableRow>
             </TableHeader>
@@ -114,11 +115,10 @@ export default function PaymentsPage() {
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">{payment.students?.name || 'N/A'}</TableCell>
                     <TableCell>
-                      {payment.membership_start_date ? format(new Date(payment.membership_start_date), "dd MMM yyyy") : 'N/A'}
-                       - 
-                      {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM yyyy") : 'N/A'}
+                      {payment.membership_start_date ? format(new Date(payment.membership_start_date), "dd MMM") : 'N/A'} - {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM") : 'N/A'}
                     </TableCell>
-                    <TableCell>{format(new Date(payment.payment_date), "dd MMM yyyy")}</TableCell>
+                    <TableCell>{format(new Date(payment.payment_date), "dd MMM yy")}</TableCell>
+                    <TableCell>{payment.payment_method}</TableCell>
                     <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
                   </TableRow>
                 ))

@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, differenceInDays } from "date-fns";
 import Link from 'next/link';
 
-// --- MODIFICATION: Define a specific type for the students this component receives ---
 interface ExpiringStudent {
     id: string;
     name: string;
@@ -13,16 +12,10 @@ interface ExpiringStudent {
 }
 
 interface ExpiringSoonProps {
-    // --- MODIFICATION: This component now receives its data as a prop ---
     expiringStudents: ExpiringStudent[];
 }
 
-// --- MODIFICATION: The component is now a standard functional component ---
 export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
-
-    // --- REMOVED: All `useState`, `useEffect`, `useCallback` and data fetching logic ---
-    // The component is now much simpler and only responsible for displaying data.
-
     const getDaysLeftText = (expiryDate: string) => {
         const days = differenceInDays(new Date(expiryDate), new Date());
         if (days < 0) return 'Expired';
@@ -32,18 +25,22 @@ export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
     };
 
     return (
-        <Card>
+        <Card className="expiring-soon-card rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50 via-white to-pink-100/40 p-4 shadow-sm">
             <CardHeader>
                 <CardTitle>Expiring Soon</CardTitle>
-                <CardDescription>Students whose memberships are ending in the next 10 days.</CardDescription>
+                <CardDescription>Memberships ending in the next 10 days.</CardDescription>
             </CardHeader>
             <CardContent>
                 {expiringStudents && expiringStudents.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         {expiringStudents.map((student) => (
-                            <Link href={`/dashboard/students/${student.id}`} key={student.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted transition-colors">
+                            <Link 
+                                href={`/dashboard/students/${student.id}`} 
+                                key={student.id} 
+                                className="flex items-center gap-4 p-3 rounded-lg bg-background/50 hover:bg-muted transition-colors border"
+                            >
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}`} alt={student.name} />
+                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${student.name}&backgroundColor=b6e3f4,ffd5dc,ffdfbf,d0bfff,bddff4&fontSize=50&fontFamily=Helvetica&radius=10`} alt={student.name} />
                                     <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">

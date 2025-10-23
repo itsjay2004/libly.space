@@ -47,7 +47,7 @@ export default function MonthlyRevenueChart({ data }: MonthlyRevenueChartProps) 
   // --- END: FIX for 6-month view ---
 
   return (
-    <Card>
+    <Card className="monthly-revenue-chart-card">
       <CardHeader>
         <CardTitle>Monthly Revenue Overview</CardTitle>
         <CardDescription>Total collections over the last 6 months.</CardDescription>

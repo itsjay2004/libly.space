@@ -39,7 +39,7 @@ const chartConfig = {
 export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
   if (!data || data.length === 0) {
     return (
-      <Card>
+      <Card className="payment-method-chart-card">
         <CardHeader>
           <CardTitle>Payment Method Report</CardTitle>
           <CardDescription>No payment data for the current month.</CardDescription>
@@ -52,7 +52,7 @@ export default function PaymentMethodChart({ data }: PaymentMethodChartProps) {
   }
 
   return (
-    <Card>
+    <Card className="payment-method-chart-card">
       <CardHeader>
         <CardTitle>Payment Method Report</CardTitle>
         <CardDescription>Distribution of payment methods for the current month.</CardDescription>

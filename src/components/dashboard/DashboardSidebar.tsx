@@ -15,6 +15,7 @@ import Logo from "@/components/logo";
 import { CustomLink } from "@/components/ui/custom-link";
 import { menuItems } from '@/constants/menu-items';
 import { UserMenu } from '@/components/dashboard/UserMenu';
+import Image from 'next/image';
 
 export function DashboardSidebar() {
     const pathname = usePathname();
@@ -23,7 +24,12 @@ export function DashboardSidebar() {
         <Sidebar variant="inset" collapsible="icon">
             <SidebarHeader className="p-4">
                 <div className="flex items-center gap-3">
-                    <Logo />
+                    <Image
+                        src="/images/libly-space-theme.png"
+                        alt="libly.space"
+                        width={30}
+                        height={30}
+                    />
                     <h1 className="text-xl font-semibold font-headline text-foreground">libly.space</h1>
                 </div>
             </SidebarHeader>
