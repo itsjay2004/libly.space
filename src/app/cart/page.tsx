@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser } from "@/hooks/use-user";
 import { useRouter } from "next/navigation";
 import NProgress from 'nprogress';
@@ -10,6 +10,7 @@ import 'nprogress/nprogress.css';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import Script from 'next/script';
+import { format } from 'date-fns';
 
 const plans = {
   monthly: {
@@ -18,13 +19,15 @@ const plans = {
     label: "Monthly",
     priceText: "₹299/month",
     totalPrice: 299,
+    duration: { months: 1 },
   },
   threeMonth: {
-    amount: 75000, // in paise (250 INR * 3 months = 750 INR)
+    amount: 75000, // in paise (750 INR)
     currency: "INR",
     label: "3-Month Plan",
     priceText: "₹250/month",
     totalPrice: 750,
+    duration: { months: 3 },
   },
 };
 
@@ -40,9 +43,26 @@ export default function CartPage() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'threeMonth'>('threeMonth');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSelectPlan = (plan: 'monthly' | 'threeMonth') => {
-    setSelectedPlan(plan);
-  };
+  const { currentExpiry, newExpiry } = useMemo(() => {
+    const today = new Date();
+    let baseDate = today;
+
+    const currentSubEnd = userDetails?.subscription_end_date ? new Date(userDetails.subscription_end_date) : null;
+
+    if (currentSubEnd && currentSubEnd > today) {
+      baseDate = currentSubEnd;
+    }
+
+    const planDuration = plans[selectedPlan].duration;
+    const nextExpiry = new Date(baseDate);
+    nextExpiry.setMonth(nextExpiry.getMonth() + planDuration.months);
+
+    return {
+      currentExpiry: currentSubEnd ? format(currentSubEnd, 'PPP') : 'N/A',
+      newExpiry: format(nextExpiry, 'PPP'),
+    };
+  }, [selectedPlan, userDetails?.subscription_end_date]);
+
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -111,9 +131,7 @@ export default function CartPage() {
     rzp1.open();
   };
 
-  const subtotal = plans[selectedPlan].totalPrice;
-  const discount = selectedPlan === 'threeMonth' ? (plans.monthly.totalPrice * 3) - plans.threeMonth.totalPrice : 0;
-  const total = subtotal;
+  const total = plans[selectedPlan].totalPrice;
 
   return (
     <>
@@ -131,44 +149,31 @@ export default function CartPage() {
                 <div className="mt-6 space-y-4">
                   {/* Monthly Plan */}
                   <div
-                    onClick={() => handleSelectPlan('monthly')}
+                    onClick={() => setSelectedPlan('monthly')}
                     className={cn(
                       "flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all",
                       selectedPlan === 'monthly' ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     )}
                   >
                     <div className="flex items-center">
-                      <div className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4",
-                        selectedPlan === 'monthly' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'
-                      )}>
+                      <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4", selectedPlan === 'monthly' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300')}>
                         {selectedPlan === 'monthly' && <Check className="w-3 h-3 text-white" />}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-800 dark:text-gray-200">Monthly</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Renews at ₹299.00/mo. Cancel anytime.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Renews at ₹299.00/mo.</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">₹299.00/month</p>
-                    </div>
+                    <div className="text-right"><p className="text-lg font-semibold text-gray-900 dark:text-white">₹299.00/month</p></div>
                   </div>
                   {/* 3-Month Plan */}
                   <div
-                    onClick={() => handleSelectPlan('threeMonth')}
-                    className={cn(
-                      "relative flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all",
-                      selectedPlan === 'threeMonth' ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    )}
+                    onClick={() => setSelectedPlan('threeMonth')}
+                    className={cn("relative flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all", selectedPlan === 'threeMonth' ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600')}
                   >
-                     <div className="absolute top-0 right-4 -mt-3">
-                        <div className="inline-block bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">SAVE ₹147</div>
-                    </div>
+                     <div className="absolute top-0 right-4 -mt-3"><div className="inline-block bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">SAVE ₹147</div></div>
                     <div className="flex items-center">
-                       <div className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4",
-                        selectedPlan === 'threeMonth' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'
-                      )}>
+                       <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4", selectedPlan === 'threeMonth' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300')}>
                         {selectedPlan === 'threeMonth' && <Check className="w-3 h-3 text-white" />}
                       </div>
                       <div>
@@ -187,32 +192,27 @@ export default function CartPage() {
           </div>
           <div className="lg:col-span-1">
             <Card className="border shadow-sm rounded-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-white">Order summary</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-2xl font-semibold text-gray-900 dark:text-white">Order summary</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
+                  <span>Current Expiry</span>
+                  <span>{currentExpiry}</span>
+                </div>
+                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
                   <span>{plans[selectedPlan].label}</span>
                   <span>₹{plans[selectedPlan].totalPrice.toFixed(2)}</span>
                 </div>
-                {discount > 0 && (
-                   <div className="flex justify-between items-center text-green-600">
-                        <span>Discount</span>
-                        <span>-₹{discount.toFixed(2)}</span>
-                    </div>
-                )}
-                <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                 <div className="flex justify-between items-center font-bold text-lg text-gray-900 dark:text-white">
-                  <span>Subtotal</span>
-                  <span>₹{total.toFixed(2)}</span>
+                  <span>New Expiry Date</span>
+                  <span>{newExpiry}</span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Taxes are calculated at checkout.</p>
                 <Button 
                     onClick={handlePayment} 
                     disabled={isProcessing}
                     className="w-full bg-indigo-600 text-white hover:bg-indigo-700 py-3 mt-4 rounded-lg font-semibold"
                 >
-                  {isProcessing ? 'Processing...' : 'Continue'}
+                  {isProcessing ? 'Processing...' : `Pay ₹${total.toFixed(2)}`}
                 </Button>
                 <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">30-day money-back guarantee</p>
               </CardContent>

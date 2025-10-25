@@ -19,11 +19,13 @@ import { format, addDays, isFuture } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '@/components/ui/separator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DatePicker } from '../ui/date-picker';
 
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   payment_method: z.string({ required_error: 'Please select a payment method.' }),
+  startDate: z.date({ required_error: 'Please select a start date.' }),
 });
 
 interface AddPaymentFormProps {
@@ -43,11 +45,13 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       studentId: studentId,
       amount: undefined,
       payment_method: 'Cash',
+      startDate: undefined,
     },
   });
 
   const watchedAmount = form.watch('amount');
   const watchedStudentId = form.watch('studentId');
+  const watchedStartDate = form.watch('startDate');
 
   // Query to fetch all students (if studentId is not pre-selected)
   const { data: students = [], isLoading: isLoadingStudents } = useQuery<Student[]>({ // Add type annotation here
@@ -83,30 +87,34 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     }
   }, [studentId, form]);
 
+  useEffect(() => {
+    if (selectedStudent) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const currentExpiry = selectedStudent.membership_expiry_date ? new Date(selectedStudent.membership_expiry_date) : null;
+      const sDate = currentExpiry && isFuture(currentExpiry) ? currentExpiry : today;
+      form.setValue('startDate', sDate);
+    }
+  },[selectedStudent, form.setValue])
 
-  const { startDate, expiryDate } = useMemo(() => {
-    if (!selectedStudent || !studentShift?.fee) return { startDate: null, expiryDate: null };
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const currentExpiry = selectedStudent.membership_expiry_date ? new Date(selectedStudent.membership_expiry_date) : null;
-    const sDate = currentExpiry && isFuture(currentExpiry) ? currentExpiry : today;
+  const { expiryDate } = useMemo(() => {
+    if (!studentShift?.fee) return { expiryDate: null };
 
     if (watchedAmount && watchedAmount > 0) {
       const feePerDay = Number(studentShift.fee) / 30;
       if (feePerDay > 0) {
         const durationDays = Math.floor(watchedAmount / feePerDay);
-        const newExpiryDate = addDays(sDate, durationDays);
-        return { startDate: sDate, expiryDate: newExpiryDate };
+        const newExpiryDate = addDays(watchedStartDate, durationDays);
+        return { expiryDate: newExpiryDate };
       }
     }
-    return { startDate: sDate, expiryDate: null };
-  }, [watchedAmount, selectedStudent, studentShift]);
+    return { expiryDate: null };
+  }, [watchedAmount, watchedStartDate, studentShift]);
 
   const addPaymentMutation = useMutation({
     mutationFn: async (values: z.infer<typeof paymentFormSchema>) => {
-      if (!startDate || !expiryDate) {
+      if (!watchedStartDate || !expiryDate) {
         throw new Error("Calculation Error: Start or Expiry date could not be calculated.");
       }
 
@@ -118,7 +126,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
         amount: values.amount,
         payment_date: todayStr,
         payment_method: values.payment_method,
-        membership_start_date: startDate.toISOString().split('T')[0],
+        membership_start_date: watchedStartDate.toISOString().split('T')[0],
         membership_end_date: expiryDate.toISOString().split('T')[0],
       });
       if (paymentError) {
@@ -225,6 +233,18 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Starts On</FormLabel>
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {selectedStudent && (
               <Card className="bg-muted/50">
@@ -246,7 +266,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                   <div className="flex justify-between items-center text-sm font-semibold">
                     <div className='text-center'>
                       <p className="text-xs text-muted-foreground font-normal">Starts On</p>
-                      {startDate ? format(startDate, 'PPP') : '-'}
+                      {watchedStartDate ? format(watchedStartDate, 'PPP') : '-'}
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     <div className='text-center text-green-600'>

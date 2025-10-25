@@ -159,3 +159,56 @@ create policy "Users can view their own subscriptions." on subscriptions
   for select using (auth.uid() = user_id);
 create policy "Users can insert their own subscriptions." on subscriptions
   for insert with check (auth.uid() = user_id);
+
+--
+-- Secure function to get public receipt details
+--
+CREATE OR REPLACE FUNCTION get_receipt_details(p_payment_id uuid)
+RETURNS TABLE (
+    id uuid,
+    amount numeric,
+    payment_date timestamptz,
+    payment_method text,
+    membership_start_date date,
+    membership_end_date date,
+    library_name text,
+    student_name text,
+    seat_number integer,
+    shift_name text,
+    shift_start_time text,
+    shift_end_time text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id,
+        p.amount,
+        p.payment_date,
+        p.payment_method,
+        p.membership_start_date,
+        p.membership_end_date,
+        l.name as library_name,
+        s.name as student_name,
+        s.seat_number,
+        sh.name as shift_name,
+        sh.start_time as shift_start_time,
+        sh.end_time as shift_end_time
+    FROM
+        public.payments p
+    LEFT JOIN
+        public.students s ON p.student_id = s.id
+    LEFT JOIN
+        public.libraries l ON s.library_id = l.id
+    LEFT JOIN
+        public.shifts sh ON s.shift_id = sh.id
+    WHERE
+        p.id = p_payment_id;
+END;
+$$;
+
+-- Grant permission for the 'anon' role to call this new function.
+-- This does NOT grant them access to the underlying tables.
+GRANT EXECUTE ON FUNCTION get_receipt_details(uuid) TO anon;

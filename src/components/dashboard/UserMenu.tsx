@@ -9,11 +9,12 @@ import { useTheme } from "next-themes";
 import { useRouter } from 'next/navigation';
 import { createClient } from "@/lib/supabase/client";
 import { CustomLink } from "@/components/ui/custom-link";
-import { Settings, LogOut, Moon, Sun } from 'lucide-react';
+import { Settings, LogOut, Moon, Sun, User } from 'lucide-react';
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 export function UserMenu() {
     const router = useRouter();
-    const { user } = useUser();
+    const { user, userDetails } = useUser();
     const { setTheme } = useTheme();
     const supabase = createClient();
 
@@ -26,12 +27,9 @@ export function UserMenu() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.user_metadata?.avatar_url} />
-                        <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                    <User />
                     <div className="text-left">
-                        <p className="text-sm font-medium text-foreground">{user?.user_metadata?.full_name ?? 'Admin'}</p>
+                        <p className="text-sm font-medium text-foreground">{userDetails?.full_name ?? 'Admin'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                 </Button>
@@ -39,7 +37,7 @@ export function UserMenu() {
             <DropdownMenuContent className="w-56 mb-2" align="end" forceMount side="top">
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name ?? 'Admin'}</p>
+                        <p className="text-sm font-medium leading-none">{userDetails?.full_name ?? 'Admin'}</p>
                         <p className="text-xs leading-none text-muted-foreground">
                             {user?.email}
                         </p>

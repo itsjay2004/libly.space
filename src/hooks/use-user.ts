@@ -11,8 +11,8 @@ import { useQuery } from '@tanstack/react-query';
 
 export const useUser = () => {
   const { user, isLoading: authLoading, error: authError } = useAuth();
-  const { userDetails, isLoading: profileLoading, error: profileError, refresh: refreshUserDetails } = useUserProfile(user);
-  const { libraryId, isLoading: libraryLoading, error: libraryError, refresh: refreshLibrary } = useLibrary(user);
+  const { userDetails, isLoading: profileLoading, error: profileError, refresh: refreshUserDetails } = useUserProfile(user! || null);
+  const { libraryId, isLoading: libraryLoading, error: libraryError, refresh: refreshLibrary } = useLibrary(user! || null);
   
   // TanStack Query for student count
   const { data: studentCount = 0, isLoading: isFetchingCount, error: studentCountError, refetch: refetchStudentCount } = useQuery({
@@ -29,6 +29,7 @@ export const useUser = () => {
     staleTime: 1000 * 60, // 1 minute stale time for student count
   });
 
+  // WIP
   const { isPro, isSubscriptionExpired, isSubscriptionExpiringSoon } = useSubscription(userDetails);
   const { isStudentLimitReached, isNearingStudentLimit } = useStudentLimit(studentCount, isPro);
 

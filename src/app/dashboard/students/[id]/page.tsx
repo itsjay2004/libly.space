@@ -21,10 +21,24 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
-import type { StudentWithShift } from '@/lib/types';
+import type { StudentWithShift, Library } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
+
+// Helper function to format 24-hour time string to AM/PM format
+const formatTime = (timeString: string | null): string => {
+  if (!timeString) return 'N/A';
+  const [hours, minutes] = timeString.split(':');
+  const date = new Date();
+  date.setHours(parseInt(hours, 10));
+  date.setMinutes(parseInt(minutes, 10));
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -32,16 +46,18 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
 
   const { user, libraryId, isUserLoading } = useSharedUser();
   const [student, setStudent] = useState<StudentWithShift | null>(null);
+  const [library, setLibrary] = useState<Library | null>(null);
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const fetchStudentData = useCallback(async () => {
+  const fetchStudentAndLibraryData = useCallback(async () => {
     if (!user || !libraryId) return;
 
     setLoadingStudent(true);
     setFetchError(null);
 
+    // Fetch student data
     const { data: studentData, error: studentError } = await supabase
       .from('students')
       .select(`
@@ -55,20 +71,36 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
     if (studentError || !studentData) {
       console.error('Error fetching student:', studentError);
       setFetchError("Student not found or an error occurred.");
-    } else {
-      setStudent(studentData);
+      setLoadingStudent(false);
+      return;
     }
+    setStudent(studentData);
+
+    // Fetch library data
+    const { data: libraryData, error: libraryError } = await supabase
+        .from('libraries')
+        .select('*')
+        .eq('id', libraryId)
+        .single();
+    
+    if (libraryError || !libraryData) {
+        console.error('Error fetching library details:', libraryError);
+        // Continue without library name, or set a default
+    } else {
+        setLibrary(libraryData);
+    }
+
     setLoadingStudent(false);
   }, [user, libraryId, studentId]); 
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      fetchStudentData();
+        fetchStudentAndLibraryData();
     } else if (!isUserLoading && !user) {
         setLoadingStudent(false);
         setFetchError("Please log in to view student profiles.");
     }
-  }, [isUserLoading, user, fetchStudentData, refreshTrigger]);
+  }, [isUserLoading, user, fetchStudentAndLibraryData, refreshTrigger]);
   
   const handleDataRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -88,6 +120,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   
   const isMembershipActive = student.membership_expiry_date ? isFuture(new Date(student.membership_expiry_date)) : false;
   const statusText = isMembershipActive ? 'Active' : 'Expired';
+  const libraryName = library?.name || 'Your Library';
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,7 +140,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 <Card>
                     <CardContent className="pt-6 flex flex-col items-center text-center">
                         <Avatar className="h-24 w-24 mb-4">
-                            <AvatarImage src={`https://api.dicebear.com/9.x/initials/svg?seed=${student.name}&radius=50&backgroundColor=ffd5dc,b6e3f4,c0aede,fdd835,7cb342,43a047&backgroundType=gradientLinear&backgroundRotation=360,0&fontFamily=Garamond&fontWeight=900`} alt={student.name} />
+                            <AvatarImage src={`https://api.dicebear.com/9.x/initials/svg?seed=${student.name}&backgroundColor=b6e3f4,d1d4f9,ffd5dc,c0aede&backgroundType=gradientLinear&fontFamily=Times%20New%20Roman&fontWeight=500`} alt={student.name} />
                             <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <h2 className="text-2xl font-semibold">{student.name}</h2>
@@ -179,7 +212,7 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                         </div>
                          <div className="flex items-center gap-3">
                             <p className='text-sm text-muted-foreground'>Shift: </p>
-                            <span className="text-sm">{student.shifts?.name || 'N/A'} {student.shifts?.start_time && student.shifts?.end_time ? `(${student.shifts.start_time} - ${student.shifts.end_time})` : ''}</span>
+                            <span className="text-sm">{student.shifts?.name || 'N/A'} {student.shifts?.start_time && student.shifts?.end_time ? `(${formatTime(student.shifts.start_time)} - ${formatTime(student.shifts.end_time)})` : ''}</span>
                         </div>
                         <div className="flex items-center gap-3">
                              <p className='text-sm text-muted-foreground'>Shift Fee:</p>
@@ -202,7 +235,12 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                         <CardDescription>A complete record of all payments for {student.name}.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <PaymentsList studentId={student.id} onPaymentDeleted={handleDataRefresh} />
+                        <PaymentsList 
+                            studentId={student.id}
+                            studentName={student.name}
+                            libraryName={libraryName}
+                            onPaymentDeleted={handleDataRefresh}
+                        />
                     </CardContent>
                 </Card>
             </div>

@@ -39,7 +39,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
     } else if (pathname === "/dashboard") {
         // Special handling for the exact dashboard home page
         const dashboardItem = menuItems.find(item => item.href === "/dashboard");
-        titleToDisplay = `👋 Hi ${user?.user_metadata.full_name || "User"}`;
+        titleToDisplay = `👋 Hi ${userDetails?.full_name || "User"}`;
         descriptionToDisplay = dashboardItem?.description || "";
     } else {
         // For all other direct /dashboard/* pages, find the best match

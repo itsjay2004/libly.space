@@ -4,63 +4,62 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CheckCircle2, Download, ArrowRight, Mail, Phone } from 'lucide-react';
+import { CheckCircle2, Download, ArrowRight, Mail, Phone, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Logo from '@/components/logo';
+import { useQuery } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/use-user';
 
 // Helper function to format the date
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('en-US', {
+const formatDate = (dateString: string | Date) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 };
 
+const fetchSubscriptionDetails = async (supabase: any, txnId: string | null) => {
+    if (!txnId) return null;
+    const { data, error } = await supabase
+        .from('subscriptions')
+        .select('start_date, end_date')
+        .eq('razorpay_payment_id', txnId)
+        .single();
+    if (error) {
+        console.error('Error fetching subscription details:', error);
+        throw new Error('Could not fetch subscription details');
+    }
+    return data;
+}
+
 export default function ThankYouPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createClient();
+  const { user } = useUser();
 
-  const [planLabel, setPlanLabel] = useState("Pro Plan");
-  const [amountPaid, setAmountPaid] = useState("0.00");
-  const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
-  const [subscriptionEndDate, setSubscriptionEndDate] = useState("");
-  const [transactionId, setTransactionId] = useState("N/A"); // Example transaction ID
+  const plan = searchParams.get('plan');
+  const amount = searchParams.get('amount');
+  const txn_id = searchParams.get('txn_id');
 
-  useEffect(() => {
-    const plan = searchParams.get('plan');
-    const amount = searchParams.get('amount');
-    const txn_id = searchParams.get('txn_id');
+  const { data: subscription, isLoading, error } = useQuery({
+      queryKey: ['subscriptionDetails', txn_id],
+      queryFn: () => fetchSubscriptionDetails(supabase, txn_id),
+      enabled: !!txn_id && !!user,
+  });
 
-    if (txn_id) {
-      setTransactionId(txn_id);
-    }
-
-    const startDate = new Date();
-    setSubscriptionStartDate(formatDate(startDate));
-
-    if (plan === 'monthly') {
-      setPlanLabel("Pro Plan (Monthly)");
-      const endDate = new Date(startDate);
-      endDate.setMonth(startDate.getMonth() + 1);
-      setSubscriptionEndDate(formatDate(endDate));
-
-    } else if (plan === 'threeMonth') {
-      setPlanLabel("Pro Plan (3-Month)");
-       const endDate = new Date(startDate);
-      endDate.setMonth(startDate.getMonth() + 3);
-      setSubscriptionEndDate(formatDate(endDate));
-    }
-
-    if (amount) {
-      setAmountPaid((parseInt(amount) / 100).toFixed(2));
-    }
-  }, [searchParams]);
+  const planLabel = plan === 'monthly' ? "Pro Plan (Monthly)" : "Pro Plan (3-Month)";
+  const amountPaid = amount ? (parseInt(amount) / 100).toFixed(2) : "0.00";
+  
+  const subscriptionStartDate = subscription ? formatDate(subscription.start_date) : "";
+  const subscriptionEndDate = subscription ? formatDate(subscription.end_date) : "";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-3xl mx-auto">
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 mx-auto">
                 <Logo />
             </div>
             <Card className="w-full shadow-lg rounded-xl border-t-4 border-green-500">
@@ -89,19 +88,27 @@ export default function ThankYouPage() {
                                 <Separator />
                                 <div className="flex justify-between py-2">
                                     <span className="text-gray-600 dark:text-gray-400">Transaction ID:</span>
-                                    <span className="font-medium text-gray-800 dark:text-gray-200">{transactionId}</span>
+                                    <span className="font-medium text-gray-800 dark:text-gray-200 break-all">{txn_id || 'N/A'}</span>
                                 </div>
                             </div>
                             <div className="p-4 bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                <div className="flex justify-between py-2">
-                                    <span className="text-blue-700 dark:text-blue-300">Subscription Starts:</span>
-                                    <span className="font-medium text-blue-800 dark:text-blue-200">{subscriptionStartDate}</span>
-                                </div>
-                                <Separator className="bg-blue-200 dark:bg-blue-800"/>
-                                <div className="flex justify-between py-2">
-                                    <span className="text-blue-700 dark:text-blue-300">Next Renewal Date:</span>
-                                    <span className="font-medium text-blue-800 dark:text-blue-200">{subscriptionEndDate}</span>
-                                </div>
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center py-6">
+                                        <Loader2 className="h-6 w-6 animate-spin text-blue-700"/>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between py-2">
+                                            <span className="text-blue-700 dark:text-blue-300">Subscription Starts:</span>
+                                            <span className="font-medium text-blue-800 dark:text-blue-200">{subscriptionStartDate}</span>
+                                        </div>
+                                        <Separator className="bg-blue-200 dark:bg-blue-800"/>
+                                        <div className="flex justify-between py-2">
+                                            <span className="text-blue-700 dark:text-blue-300">Next Renewal Date:</span>
+                                            <span className="font-medium text-blue-800 dark:text-blue-200">{subscriptionEndDate}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -112,10 +119,6 @@ export default function ThankYouPage() {
                                 <Button onClick={() => router.push('/dashboard')} className="w-full justify-between items-center text-lg py-6 bg-indigo-600 hover:bg-indigo-700">
                                     <span>Go to Your Dashboard</span>
                                     <ArrowRight className="h-5 w-5" />
-                                </Button>
-                                <Button variant="outline" className="w-full justify-between items-center text-lg py-6 mt-3">
-                                    <span>Download Invoice</span>
-                                    <Download className="h-5 w-5" />
                                 </Button>
                             </div>
                              <div>
@@ -136,11 +139,7 @@ export default function ThankYouPage() {
                 <div className="flex justify-center items-center gap-6 mt-4">
                     <a href="mailto:support@libly.space" className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400">
                         <Mail className="h-5 w-5" />
-                        support@libly.space
-                    </a>
-                    <a href="tel:+911234567890" className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400">
-                        <Phone className="h-5 w-5" />
-                        +91 12345 67890
+                        liblyspace@gmail.com
                     </a>
                 </div>
             </footer>

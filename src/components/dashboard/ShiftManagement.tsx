@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import type { Shift } from '@/lib/types';
+import type { Toast } from "@/hooks/use-toast";
 
 interface ShiftManagementProps {
   shifts: Shift[];
@@ -14,7 +15,7 @@ interface ShiftManagementProps {
   isSaving: boolean;
   onSave: () => void;
   onRemove: (shiftId: number | string) => void;
-  toast: (options: { title: string; description?: string; variant?: "default" | "destructive" }) => void;
+  toast: (props: Toast) => void
 }
 
 export function ShiftManagement({
@@ -24,7 +25,7 @@ export function ShiftManagement({
   isSaving,
   onSave,
   onRemove,
-  toast,
+  toast
 }: ShiftManagementProps) {
 
   const handleShiftChange = (index: number, field: keyof Omit<Shift, 'id' | 'library_id'>, value: string | number) => {

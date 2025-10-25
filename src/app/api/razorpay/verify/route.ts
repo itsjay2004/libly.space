@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
       const { data: user, error: userError } = await supabase
         .from("profiles")
-        .select("subscription_end_date") // Select only necessary field
+        .select("subscription_end_date")
         .eq("id", user_id)
         .single();
 
@@ -36,15 +36,14 @@ export async function POST(req: Request) {
 
       let baseDate = new Date();
 
-      // If user has an existing subscription that ends in the future, extend from that date
       if (user.subscription_end_date) {
         const existingEndDate = new Date(user.subscription_end_date);
         if (existingEndDate > baseDate) {
-          baseDate = existingEndDate; // Extend from existing end date
+          baseDate = existingEndDate;
         }
       }
 
-      const newSubscriptionEndDate = new Date(baseDate); // Clone baseDate to modify
+      const newSubscriptionEndDate = new Date(baseDate);
 
       if (plan === "monthly") {
         newSubscriptionEndDate.setMonth(newSubscriptionEndDate.getMonth() + 1);
@@ -70,11 +69,11 @@ export async function POST(req: Request) {
           {
             user_id,
             razorpay_payment_id,
-            razorpay_subscription_id: razorpay_order_id, // Using order_id as subscription_id for simplicity
+            razorpay_subscription_id: razorpay_order_id,
             razorpay_signature,
             plan,
             status: "active",
-            start_date: new Date().toISOString(), // Start date is always now for the record
+            start_date: baseDate.toISOString(), // FIX: Use the calculated baseDate as the start_date
             end_date: newSubscriptionEndDate.toISOString(),
           },
         ]);
