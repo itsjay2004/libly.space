@@ -20,6 +20,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Separator } from '@/components/ui/separator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DatePicker } from '../ui/date-picker';
+import LoadingSpinner from '../ui/loading-spinner';
 
 const paymentFormSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
@@ -53,16 +54,39 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
   const watchedStudentId = form.watch('studentId');
   const watchedStartDate = form.watch('startDate');
 
-  // Query to fetch all students (if studentId is not pre-selected)
-  const { data: students = [], isLoading: isLoadingStudents } = useQuery<Student[]>({ // Add type annotation here
-    queryKey: ['students', libraryId],
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchTerm.length >= 2) {
+        setDebouncedSearchTerm(searchTerm);
+      } else {
+        setDebouncedSearchTerm('');
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Query to fetch students based on search term (if studentId is not pre-selected)
+  const { data: searchedStudents = [], isLoading: isLoadingStudents } = useQuery<Student[]>({ // Add type annotation here
+    queryKey: ['students', libraryId, debouncedSearchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase.from('students').select('id, name, phone').eq('library_id', libraryId);
+      if (!debouncedSearchTerm) return [];
+      const { data, error } = await supabase.from('students')
+        .select('id, name, phone')
+        .eq('library_id', libraryId)
+        .ilike('name', `%${debouncedSearchTerm}%`)
+        .limit(5);
       if (error) throw error;
       return data || [];
     },
-    enabled: !studentId, // Only fetch if studentId is NOT provided as a prop
-    staleTime: 1000 * 60, // 1 minute
+    enabled: !studentId && debouncedSearchTerm.length >= 2, // Only fetch if studentId is NOT provided and search term is at least 2 chars
+    staleTime: 1000 * 30, // 30 seconds
+    gcTime: 1000 * 60 * 5,
   });
 
   // Query to fetch details for a specific student and their shift
@@ -94,6 +118,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       const currentExpiry = selectedStudent.membership_expiry_date ? new Date(selectedStudent.membership_expiry_date) : null;
       const sDate = currentExpiry && isFuture(currentExpiry) ? currentExpiry : today;
       form.setValue('startDate', sDate);
+      setSearchTerm(selectedStudent.name); // Set search term to selected student's name
     }
   },[selectedStudent, form.setValue])
 
@@ -148,7 +173,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
 
       // Invalidate relevant queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['studentCount', libraryId] });
-      queryClient.invalidateQueries({ queryKey: ['payments', libraryId] }); // Assuming a payments list query
+      queryClient.invalidateQueries({ queryKey: ['allPayments', libraryId] });
       queryClient.invalidateQueries({ queryKey: ['studentDetails', variables.studentId] }); // Invalidate specific student's details
       queryClient.invalidateQueries({ queryKey: ['students', libraryId] }); // Invalidate all students list
       queryClient.invalidateQueries({ queryKey: ['dashboardStats', libraryId] }); // Invalidate dashboard stats if they rely on this
@@ -163,8 +188,11 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     addPaymentMutation.mutate(values);
   };
 
-  const displayStudents = studentId ? (selectedStudent ? [selectedStudent] : []) : students;
-  const displayLoadingStudents = studentId ? isLoadingStudentDetails : isLoadingStudents;
+  // Determine which students to display based on whether a studentId is pre-selected
+  // If studentId is provided, only show that student's details once loaded.
+  // Otherwise, show the results from the debounced search.
+  const displayStudents = studentId ? (selectedStudent ? [selectedStudent] : []) : searchedStudents;
+  const displayLoadingStudents = studentId ? isLoadingStudentDetails : (isLoadingStudents && debouncedSearchTerm.length >= 2);
 
   return (
     <Card>
@@ -187,9 +215,37 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                         <FormControl><Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>{field.value ? displayStudents.find((s) => s.id === field.value)?.name : "Select a student"}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command><CommandInput placeholder="Search student..." /><CommandList><CommandEmpty>{displayLoadingStudents ? 'Loading...' : 'No student found.'}</CommandEmpty><CommandGroup>
-                          {displayStudents.map((s) => (<CommandItem value={s.name} key={s.id} onSelect={() => form.setValue("studentId", s.id, { shouldValidate: true })}><Check className={cn("mr-2 h-4 w-4", s.id === field.value ? "opacity-100" : "opacity-0")} /><div><p>{s.name}</p><p className="text-xs text-muted-foreground">{s.phone}</p></div></CommandItem>))}
-                        </CommandGroup></CommandList></Command>
+                        <Command>
+                          <CommandInput
+                            placeholder="Search student..."
+                            value={searchTerm}
+                            onValueChange={setSearchTerm}
+                          />
+                          <CommandList>
+                            {displayLoadingStudents ? (
+                              <div className="p-4 text-center"><LoadingSpinner /></div>
+                            ) : (
+                              <>
+                                <CommandEmpty>{searchTerm.length >= 2 ? 'No student found.' : 'Type at least 2 characters to search.'}</CommandEmpty>
+                                <CommandGroup>
+                                  {displayStudents.map((s) => (
+                                    <CommandItem value={s.name} key={s.id} onSelect={() => {
+                                      form.setValue("studentId", s.id, { shouldValidate: true });
+                                      setSearchTerm(s.name); // Set search term to selected student's name
+                                      setDebouncedSearchTerm(''); // Clear debounced search term
+                                    }}>
+                                      <Check className={cn("mr-2 h-4 w-4", s.id === field.value ? "opacity-100" : "opacity-0")} />
+                                      <div>
+                                        <p>{s.name}</p>
+                                        <p className="text-xs text-muted-foreground">{s.phone}</p>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </>
+                            )}
+                          </CommandList>
+                        </Command>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />

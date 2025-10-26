@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import Logo from '@/components/logo'; // This imports FullLogo as default
+import { FullLogoSm as Logo } from '@/components/logo';
 import { Armchair, Clock, CalendarCheck2, CreditCard } from 'lucide-react';
 
 // This interface now matches the structure returned by our RPC function.

@@ -47,7 +47,7 @@ const Ready = () => {
           Congratulations! You're All Set!
         </CardTitle>
         <CardDescription className="mt-2 text-xl text-gray-700 dark:text-gray-300">
-          Your library is now fully configured. If you uploaded a student list, we're processing it in the background.
+          Your library is now fully configured. If you uploaded a student list, we're processing it and importing it into your account.
         </CardDescription>
       </CardHeader>
       <CardContent className="mt-6 flex flex-col items-center gap-6">

@@ -120,6 +120,14 @@ export default function ThankYouPage() {
                                     <span>Go to Your Dashboard</span>
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
+                                <Button 
+                                    onClick={() => window.print()} 
+                                    variant="outline" 
+                                    className="w-full justify-center items-center text-lg py-6 mt-4"
+                                >
+                                    <Download className="h-5 w-5 mr-2" />
+                                    <span>Download Receipt</span>
+                                </Button>
                             </div>
                              <div>
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Pro Plan Benefits</h3>

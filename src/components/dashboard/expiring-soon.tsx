@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, differenceInDays } from "date-fns";
-import Link from 'next/link';
+import { CustomLink } from "@/components/ui/custom-link";
 
 interface ExpiringStudent {
     id: string;
@@ -34,7 +34,7 @@ export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
                 {expiringStudents && expiringStudents.length > 0 ? (
                     <div className="space-y-2">
                         {expiringStudents.map((student) => (
-                            <Link 
+                            <CustomLink 
                                 href={`/dashboard/students/${student.id}`} 
                                 key={student.id} 
                                 className="flex items-center gap-4 p-3 rounded-lg bg-background/50 hover:bg-muted transition-colors border"
@@ -49,7 +49,7 @@ export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
                                         {getDaysLeftText(student.membership_expiry_date)}
                                     </p>
                                 </div>
-                            </Link>
+                            </CustomLink>
                         ))}
                     </div>
                 ) : (

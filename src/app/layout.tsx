@@ -5,6 +5,7 @@ import '@/styles/nprogress.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import ClientProgressBar from '@/components/ui/client-progress-bar';
+import Footer from '@/components/footer';
 // --- NEW: Import the Providers component ---
 import { Providers } from '@/components/providers';
 
@@ -23,7 +24,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#c7ed09" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -39,9 +39,14 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ClientProgressBar />
-            {children}
-            <Toaster />
+            <div className="flex flex-col min-h-screen">
+              <ClientProgressBar />
+              <main className="flex-grow">
+                {children}
+              </main>
+              <Toaster />
+              <Footer />
+            </div>
           </ThemeProvider>
         </Providers>
       </body>

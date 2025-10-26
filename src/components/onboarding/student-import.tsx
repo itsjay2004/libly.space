@@ -85,7 +85,7 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Import Your Student Roster</CardTitle>
+        <CardTitle>Import Your Data</CardTitle>
         <CardDescription>
           Effortlessly add all your students at once by uploading a spreadsheet file.
         </CardDescription>
@@ -97,22 +97,24 @@ const StudentImport = ({ updateOnboardingStatus }: StudentImportProps) => {
             <div>
               <h4 className="text-md font-semibold">Mandatory Columns:</h4>
               <ul className="list-disc list-inside text-sm text-muted-foreground">
-                <li><span className="font-medium">student_name</span></li>
-                <li><span className="font-medium">phone_number</span></li>
-                <li><span className="font-medium">shift_name</span> (must match an existing shift name from your library setup)</li>
+                <li><span className="font-medium">Student Name</span></li>
+                <li><span className="font-medium">Phone Number</span></li>
+                <li><span className="font-medium">Shift Name</span> (must match an existing shift name from your library setup)</li>
               </ul>
             </div>
             <div>
-              <h4 className="text-md font-semibold">Recommended Columns:</h4>
+              <h4 className="text-md font-semibold">Optional Columns:</h4>
               <ul className="list-disc list-inside text-sm text-muted-foreground">
-                <li><span className="font-medium">join_date</span> (YYYY-MM-DD)</li>
-                <li><span className="font-medium">seat_number</span></li>
-                <li><span className="font-medium">student_id_number</span></li>
+                <li><span className="font-medium">Join Date</span></li>
+                <li><span className="font-medium">Seat Number</span></li>
+                <li><span className="font-medium">Aadhar No.</span></li>
+                <li><span className="font-medium">Address</span></li>
+                <li><span className="font-medium">Gender</span></li>
                 <li><span className="font-medium">email</span></li>
               </ul>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">Columns must be named exactly as listed above. Extra columns will be ignored.</p>
+          <p className="text-sm text-muted-foreground">If you are having any issue, please call us at. <span className='text-blue-500'>+91 9142992036</span></p>
         </div>
 
         <div

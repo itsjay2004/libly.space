@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import Script from 'next/script';
 import { format } from 'date-fns';
 
@@ -36,6 +36,14 @@ declare global {
     Razorpay: any;
   }
 }
+
+const ProcessingOverlay = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-center">
+        <Loader2 className="animate-spin text-white h-12 w-12 mb-4" />
+        <p className="text-white text-lg">Processing payment...</p>
+        <p className="text-white text-sm mt-2">Please do not refresh or close the page.</p>
+    </div>
+);
 
 export default function CartPage() {
   const router = useRouter();
@@ -114,7 +122,7 @@ export default function CartPage() {
         contact: userDetails?.phone,
       },
       notes: {
-        address: "Libly Corporate Office",
+        address: "Libly WebApp",
       },
       theme: {
         color: "#0062ff",
@@ -135,10 +143,11 @@ export default function CartPage() {
 
   return (
     <>
-    <Script
+    {isProcessing && <ProcessingOverlay />}
+    {/* <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
-    />
+    /> */}
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8">Your cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -204,8 +213,8 @@ export default function CartPage() {
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                 <div className="flex justify-between items-center font-bold text-lg text-gray-900 dark:text-white">
-                  <span>New Expiry Date</span>
-                  <span>{newExpiry}</span>
+                  <span className='text-base'>Plan Valid Until:</span>
+                  <span className='text-xs font-medium border border-indigo-600 rounded-sm p-1'>{newExpiry}</span>
                 </div>
                 <Button 
                     onClick={handlePayment} 
@@ -214,7 +223,7 @@ export default function CartPage() {
                 >
                   {isProcessing ? 'Processing...' : `Pay ₹${total.toFixed(2)}`}
                 </Button>
-                <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">30-day money-back guarantee</p>
+                <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">15-day money-back guarantee</p>
               </CardContent>
             </Card>
           </div>

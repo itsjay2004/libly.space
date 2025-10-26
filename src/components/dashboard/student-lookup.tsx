@@ -6,7 +6,7 @@ import { useUser } from '@/hooks/use-user';
 import { Input } from '@/components/ui/input';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import Link from 'next/link';
+import { CustomLink } from '@/components/ui/custom-link';
 import { useQuery } from '@tanstack/react-query';
 
 interface Student {
@@ -72,9 +72,9 @@ export default function StudentLookup() {
           <ul className="space-y-2">
             {students?.map((student) => (
               <li key={student.id} className="border p-3 rounded-lg text-sm bg-background/50 hover:bg-muted transition-colors">
-                <Link href={`/dashboard/students/${student.id}`} className="block font-medium">
+                <CustomLink href={`/dashboard/students/${student.id}`} className="block font-medium">
                   {student.name}
-                </Link>
+                </CustomLink>
               </li>
             ))}
             {debouncedSearchTerm.trim().length >= 2 && !isLoading && students?.length === 0 && (

@@ -26,6 +26,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Student } from '@/lib/types';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 // The props are updated to make this a fully controlled component
 interface DataTableProps<TData, TValue> {
@@ -54,6 +56,8 @@ export function DataTable<TData, TValue>({
   setFilters,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter();
+  const [loadingRow, setLoadingRow] = useState<string | null>(null);
+
   
   // The columns are memoized to prevent re-renders
   const columns = React.useMemo(() => initialColumns, [initialColumns]);
@@ -81,6 +85,7 @@ export function DataTable<TData, TValue>({
 
   const handleRowClick = (row: any) => {
     const student = row.original as Student;
+    setLoadingRow(student.id);
     router.push(`/dashboard/students/${student.id}`);
   };
 
@@ -128,9 +133,19 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {loadingRow === (row.original as Student).id && cell.column.id === 'name' ? (
+                        <div className="flex items-center">
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </div>
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
                       )}
                     </TableCell>
                   ))}

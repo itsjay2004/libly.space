@@ -16,7 +16,7 @@ export function Banners() {
       const router = useRouter();
 
       const handleUpgrade = () => {
-        router.push('/dashboard/cart');
+        router.push('/cart');
       };
 
     return (
@@ -32,7 +32,7 @@ export function Banners() {
             {isStudentLimitReached && (
               <Banner 
                 type="error" 
-                message="You have reached your student limit. Please upgrade to Pro to add more students."
+                message="You have reached your student limit. Please upgrade to Pro to use all the features."
                 buttonText="Upgrade to Pro"
                 onButtonClick={handleUpgrade}
               />
@@ -48,7 +48,7 @@ export function Banners() {
             {isNearingStudentLimit && (
               <Banner 
                 type="warning" 
-                message={`You are nearing your student limit. You have ${50 - studentCount} spots left.`}
+                message={`You are nearing your student limit. You have ${50 - studentCount} spots left. Upgrade to Pro to avoid interruption`}
                 buttonText="Upgrade to Pro"
                 onButtonClick={handleUpgrade}
               />

@@ -58,7 +58,13 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // If user is logged in and trying to access the root path, redirect to dashboard
+  if (user && request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // If user is not logged in and trying to access protected paths, redirect to login
+  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/cart'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -67,6 +73,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/dashboard/:path*',
+    '/cart/:path*',
   ],
 }
