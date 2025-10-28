@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlanSelectorSheet } from './plan-selector-sheet';
+import PlanSelectorSheet from './plan-selector-sheet';
 
 const FREE_PLAN_STUDENT_LIMIT = 50;
 
@@ -25,7 +25,7 @@ export default function SubscriptionDetails() {
 
   if (isUserLoading) {
     return (
-        <Card className="bg-white shadow-lg rounded-lg">
+        <Card className="shadow-lg rounded-lg">
             <CardHeader>
                 <Skeleton className="h-6 w-32 mb-1" />
                 <Skeleton className="h-4 w-56" />
@@ -52,17 +52,17 @@ export default function SubscriptionDetails() {
   }
 
   return (
-    <Card className="bg-white shadow-lg rounded-lg">
+    <Card className=" shadow-lg rounded-lg">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold text-gray-800">Subscription</CardTitle>
-        <CardDescription className="text-gray-600 mt-1">Manage your subscription and billing details.</CardDescription>
+        <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">Subscription</CardTitle>
+        <CardDescription className="text-black dark:text-white/70 mt-1">Manage your subscription and billing details.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 text-gray-700">
         <div className="flex justify-between items-center border-b pb-4">
           <div>
-            <h3 className="font-semibold text-gray-900">Current Plan</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Current Plan</h3>
             <Badge
-              className={isSubscribed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+              className={isSubscribed ? 'bg-green-100 dark:bg-green-500 text-green-800 dark:text-white' : 'bg-gray-100 dark:bg-gray-100 text-gray-800 dark:text-black'}
             >
               {isSubscribed ? 'Pro' : 'Free'}
             </Badge>
@@ -87,10 +87,10 @@ export default function SubscriptionDetails() {
         
         {isFreePlan && (
           <div className="grid gap-3">
-            <h3 className="font-semibold text-gray-900">Student Usage</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Student Usage</h3>
             <div className="flex items-center gap-4">
               <Progress value={usagePercentage} className="h-2 w-full bg-gray-200 rounded-full" />
-              <span className="text-sm font-medium text-gray-800">{Math.round(usagePercentage)}%</span>
+              <span className="text-sm font-medium text-gray-800 dark:text-white">{Math.round(usagePercentage)}%</span>
             </div>
             <p className="text-sm text-gray-600">
               You have used {studentCount} of your {FREE_PLAN_STUDENT_LIMIT} student limit. 
@@ -107,7 +107,7 @@ export default function SubscriptionDetails() {
 
         {isSubscribed && userDetails?.subscription_end_date && (
             <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900">Subscription End Date</h3> {/* Changed title */}
+                <h3 className="font-semibold text-gray-900 text-white">Subscription End Date</h3> {/* Changed title */}
                 <p className="text-sm text-gray-600 mt-1">
                     Your current subscription is active until {new Date(userDetails.subscription_end_date).toLocaleDateString()}. Please renew manually to continue uninterrupted service.
                 </p>

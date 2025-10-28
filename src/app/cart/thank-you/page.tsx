@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/use-user';
 
+
 // Helper function to format the date
 const formatDate = (dateString: string | Date) => {
   return new Date(dateString).toLocaleDateString('en-US', {

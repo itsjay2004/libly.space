@@ -5,7 +5,7 @@ import { columns } from '@/components/students/columns';
 import { DataTable } from '@/components/students/data-table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useSharedUser } from '@/contexts/UserContext'; 
+import { useSharedUser } from '@/contexts/UserContext';
 import { createClient } from '@/lib/supabase/client';
 import StudentActions from '@/components/students/student-actions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,27 +13,29 @@ import { PaginationState, SortingState, ColumnFiltersState } from '@tanstack/rea
 import { useQuery } from '@tanstack/react-query';
 import type { Student, Shift } from '@/lib/types';
 
-// Define the type for a student with its shift details
 type StudentWithShift = Student & { shifts: Shift | null };
 
 export default function StudentsPage() {
-  const { user, libraryId, isLoading: isUserContextLoading } = useSharedUser();
-  
+  const { user, libraryId, isUserLoading: isUserContextLoading } = useSharedUser();
+
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filters, setFilters] = useState<ColumnFiltersState>([]);
-
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
+
+  useEffect(() => {
+    document.title = `Students - Libly Space`;
+  }, [])
 
   // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => {
       clearTimeout(handler);
@@ -43,12 +45,12 @@ export default function StudentsPage() {
   // Update searchTerm from global filter
   useEffect(() => {
     const globalFilterEntry = filters.find(f => f.id === 'global');
-    const newSearchTerm = (globalFilterEntry && typeof globalFilterEntry.value === 'string') 
-                           ? globalFilterEntry.value 
-                           : '';
-    
+    const newSearchTerm = (globalFilterEntry && typeof globalFilterEntry.value === 'string')
+      ? globalFilterEntry.value
+      : '';
+
     if (newSearchTerm !== searchTerm) {
-        setSearchTerm(newSearchTerm);
+      setSearchTerm(newSearchTerm);
     }
   }, [filters, searchTerm]);
 
@@ -56,8 +58,6 @@ export default function StudentsPage() {
 
   const fetchStudentsQueryFn = useCallback(async () => {
     if (!libraryId) {
-      // This case should ideally be handled by `enabled: !!libraryId`
-      // but as a fallback, return an empty set if somehow called without libraryId
       return { data: [], count: 0 };
     }
 
@@ -78,13 +78,13 @@ export default function StudentsPage() {
     } else {
       query = query.order('name', { ascending: true });
     }
-    
+
     if (debouncedSearchTerm) {
       query = query.or(`name.ilike.%${debouncedSearchTerm}%,phone.ilike.%${debouncedSearchTerm}%`);
     }
 
     const { data, error, count } = await query;
-    
+
     if (error) {
       throw error;
     }
@@ -94,38 +94,42 @@ export default function StudentsPage() {
   const { data, isLoading, isError, error } = useQuery<{ data: StudentWithShift[], count: number }, Error>({
     queryKey: ['students', libraryId, pagination, sorting, debouncedSearchTerm],
     queryFn: fetchStudentsQueryFn,
-    enabled: !!user && !!libraryId, // Only fetch if user and libraryId are available
-    keepPreviousData: true, // Keep displaying previous data while fetching new
-    staleTime: 1000 * 30, // Data is considered stale after 30 seconds
+    enabled: !!user && !!libraryId,
+    keepPreviousData: true,
+    staleTime: 1000 * 30,
   });
 
   const students = data?.data || [];
   const pageCount = Math.ceil((data?.count || 0) / pagination.pageSize);
 
-  // Check if initial user context is still loading
   if (isUserContextLoading) {
     return <StudentsPageSkeleton />;
   }
 
-  // Check if user is not logged in after context loads
   if (!user) {
     return <p>Please log in to view students.</p>;
   }
 
-  // Check if libraryId is not available after context loads
   if (!libraryId) {
     return <NoLibraryFound />;
   }
 
-  // All checks passed, render the data table
   return (
-    <div className="flex flex-col gap-8">
-      <div className="rounded-lg border bg-card p-4">
-        <div className="flex justify-end mb-4">
-          <StudentActions /> {/* onActionComplete will use query invalidation */}
-        </div>
-        <DataTable 
-            columns={columns} 
+    <>
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex flex-col gap-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">All Students</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Manage your students and their information
+              </p>
+            </div>
+            <StudentActions />
+          </div>
+
+          <DataTable
+            columns={columns}
             data={students}
             pageCount={pageCount}
             isLoading={isLoading}
@@ -134,35 +138,41 @@ export default function StudentsPage() {
             filters={filters}
             setPagination={setPagination}
             setSorting={setSorting}
-            setFilters={setFilters} 
-        />
+            setFilters={setFilters}
+          />
+        </div>
       </div>
-    </div>
+    </>
+
   );
 }
 
 const StudentsPageSkeleton = () => (
-  <div className="flex flex-col gap-8">
-    <div className="rounded-lg border bg-card p-4">
-      <div className="flex justify-end mb-4">
-        <Skeleton className="h-10 w-32" />
+  <div className="container mx-auto py-6 space-y-6">
+    <div className="flex justify-between items-center">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64" />
       </div>
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
+      <Skeleton className="h-10 w-32" />
+    </div>
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
     </div>
   </div>
 );
 
 const NoLibraryFound = () => (
+  <div className="container mx-auto py-8">
     <div className="text-center p-8 border-2 border-dashed rounded-lg">
-        <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
-        <p className="mb-4">Please set up your library in the settings to manage students.</p>
-        <Button asChild>
-            <Link href="/dashboard/library">Go to Library Settings</Link>
-        </Button>
+      <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
+      <p className="mb-4">Please set up your library in the settings to manage students.</p>
+      <Button asChild>
+        <Link href="/dashboard/library">Go to Library Settings</Link>
+      </Button>
     </div>
+  </div>
 );

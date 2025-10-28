@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
+import {useEffect } from "react"
+
 
 export default function SeatManagementPage() {
   const { user } = useUser();
@@ -33,6 +35,10 @@ export default function SeatManagementPage() {
     handleSeatClick,
   } = useSeatManagement(user);
 
+  useEffect(() => {
+    document.title = `Seat - Libly Space`;
+  }, [])
+
   if (!library && !loading) {
     return (
         <div className="text-center p-8 border-2 border-dashed rounded-lg">
@@ -48,6 +54,8 @@ export default function SeatManagementPage() {
   const refreshData = () => {
       queryClient.invalidateQueries({ queryKey: ['students', library?.id] });
   }
+
+
 
   return (
     <div>

@@ -10,7 +10,11 @@ import RecentPaymentsTable from '@/components/payments/recent-payments-table';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function PaymentsPage() {
-  const { user, libraryId, isLoading: isUserContextLoading } = useSharedUser();
+  const { user, libraryId, isUserLoading: isUserContextLoading } = useSharedUser();
+
+  useEffect(() => {
+    document.title = `Payment - Libly Space`;
+  }, [])
 
   // Check if initial user context is still loading
   if (isUserContextLoading) {
@@ -24,15 +28,15 @@ export default function PaymentsPage() {
 
   // Check if libraryId is not available after context loads
   if (!libraryId) {
-      return (
-        <div className="text-center p-8 border-2 border-dashed rounded-lg">
-            <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
-            <p className="mb-4">Please set up your library in the settings to manage payments.</p>
-            <Button asChild>
-                <Link href="/dashboard/library">Go to Library Settings</Link>
-            </Button>
-        </div>
-      );
+    return (
+      <div className="text-center p-8 border-2 border-dashed rounded-lg">
+        <h2 className="text-2xl font-semibold mb-2">No Library Found</h2>
+        <p className="mb-4">Please set up your library in the settings to manage payments.</p>
+        <Button asChild>
+          <Link href="/dashboard/library">Go to Library Settings</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -48,23 +52,23 @@ export default function PaymentsPage() {
 }
 
 const PaymentsPageSkeleton = () => (
-    <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-            <Skeleton className="h-96 w-full" />
-        </div>
-        <Card className="lg:col-span-2">
-            <CardHeader>
-                <Skeleton className="h-6 w-40 mb-2" />
-                <Skeleton className="h-4 w-56" />
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-2">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-            </CardContent>
-        </Card>
+  <div className="grid gap-6 lg:grid-cols-3">
+    <div className="lg:col-span-1">
+      <Skeleton className="h-96 w-full" />
     </div>
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <Skeleton className="h-6 w-40 mb-2" />
+        <Skeleton className="h-4 w-56" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+  </div>
 );

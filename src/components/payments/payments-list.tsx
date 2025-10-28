@@ -18,8 +18,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Share2 } from 'lucide-react';
+import { Trash2, Share2, MoreVertical } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PaymentData {
   id: string;
@@ -76,7 +82,6 @@ export default function PaymentsList({ studentId, studentName, libraryName, onPa
     }
 
     if (data) {
-      // ✅ Store student's phone from the first record (if available)
       if (data.length > 0 && data[0].students?.phone) {
         setPhone(data[0].students.phone);
       }
@@ -154,7 +159,6 @@ export default function PaymentsList({ studentId, studentName, libraryName, onPa
       toast({ title: "Error", description: "Failed to update student's expiry date.", variant: "destructive" });
     }
 
-    // Refresh list
     setPayments([]);
     setPage(0);
     setHasMore(true);
@@ -165,87 +169,186 @@ export default function PaymentsList({ studentId, studentName, libraryName, onPa
 
   return (
     <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Membership Period</TableHead>
-            <TableHead>Payment Date</TableHead>
-            <TableHead>Pay Method</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Share</TableHead>
-            <TableHead className="text-right">Delete</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading && payments.length === 0 ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <TableRow key={`skeleton-${i}`}>
-                <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
+      {/* Desktop Table */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-sm">Membership Period</TableHead>
+              <TableHead className="text-sm">Payment Date</TableHead>
+              <TableHead className="text-sm">Pay Method</TableHead>
+              <TableHead className="text-sm text-right">Amount</TableHead>
+              <TableHead className="text-sm text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && payments.length === 0 ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  <TableCell colSpan={5}><Skeleton className="h-8 w-full bg-gray-200 dark:bg-gray-800" /></TableCell>
+                </TableRow>
+              ))
+            ) : payments.length > 0 ? (
+              payments.map((payment) => (
+                <TableRow key={payment.id} className="border-b border-gray-200 dark:border-gray-700">
+                  <TableCell className="text-sm text-gray-900 dark:text-gray-100">
+                    {payment.membership_start_date ? format(new Date(payment.membership_start_date), "dd MMM yyyy") : 'N/A'} - 
+                    {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM yyyy") : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-900 dark:text-gray-100">
+                    {format(new Date(payment.payment_date), "dd MMM yyyy")}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-900 dark:text-gray-100">
+                    {payment.payment_method || 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-sm text-right font-medium text-gray-900 dark:text-gray-100">
+                    ₹{payment.amount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleShareReceipt(payment.id)}
+                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        aria-label="Share via WhatsApp"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-gray-900 dark:text-gray-100">
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+                              This action cannot be undone. This will permanently delete the payment record.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(payment.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Continue
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                  No payments found for this student.
+                </TableCell>
               </TableRow>
-            ))
-          ) : payments.length > 0 ? (
-            payments.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading && payments.length === 0 ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`mobile-skeleton-${i}`} className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-3">
+              <Skeleton className="h-4 w-3/4 bg-gray-200 dark:bg-gray-800" />
+              <Skeleton className="h-4 w-1/2 bg-gray-200 dark:bg-gray-800" />
+              <Skeleton className="h-4 w-1/3 bg-gray-200 dark:bg-gray-800" />
+            </div>
+          ))
+        ) : payments.length > 0 ? (
+          payments.map((payment) => (
+            <div key={payment.id} className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-3">
+              {/* Header */}
+              <div className="flex justify-between items-start">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      ₹{payment.amount.toLocaleString()}
+                    </p>
+                    <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded">
+                      {payment.payment_method}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Paid on {format(new Date(payment.payment_date), "dd MMM yyyy")}
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800">
+                    <DropdownMenuItem 
+                      onClick={() => handleShareReceipt(payment.id)}
+                      className="text-blue-600 dark:text-blue-400 cursor-pointer"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Receipt
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDelete(payment.id)}
+                      className="text-red-600 dark:text-red-400 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Membership Period */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs text-muted-foreground">Membership Period</p>
+                <p className="text-sm text-gray-900 dark:text-gray-100">
                   {payment.membership_start_date ? format(new Date(payment.membership_start_date), "dd MMM yyyy") : 'N/A'} - 
                   {payment.membership_end_date ? format(new Date(payment.membership_end_date), "dd MMM yyyy") : 'N/A'}
-                </TableCell>
-                <TableCell>{format(new Date(payment.payment_date), "dd MMM yyyy")}</TableCell>
-                <TableCell>{payment.payment_method || 'N/A'}</TableCell>
-                <TableCell className="text-right">₹{payment.amount.toLocaleString()}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleShareReceipt(payment.id)}
-                    aria-label="Share via WhatsApp"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-                <TableCell className="text-right">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the payment record.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(payment.id)}>
-                          Continue
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                No payments found for this student.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                </p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center h-24 flex items-center justify-center text-muted-foreground border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-black">
+            No payments found for this student.
+          </div>
+        )}
+      </div>
 
+      {/* Load More Button */}
       {hasMore && !isLoading && payments.length > 0 && (
-        <div className="text-center">
-          <Button onClick={handleLoadMore} variant="outline">Load More</Button>
+        <div className="text-center pt-4">
+          <Button 
+            onClick={handleLoadMore} 
+            variant="outline" 
+            className="bg-white dark:bg-black border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            Load More
+          </Button>
         </div>
       )}
 
       {isLoading && payments.length > 0 && (
-        <div className="text-center"><p>Loading more payments...</p></div>
+        <div className="text-center text-sm text-muted-foreground py-4">
+          Loading more payments...
+        </div>
       )}
     </div>
   );

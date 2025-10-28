@@ -1,5 +1,12 @@
 import Branding from "@/components/auth/Branding";
 import LoginForm from "@/components/auth/LoginForm";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Login - Libly Space",
+  description: "Library management for modern libraries"
+}
+
 
 export default function LoginPage() {
   return (

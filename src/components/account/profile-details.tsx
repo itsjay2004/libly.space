@@ -14,7 +14,7 @@ export default function ProfileDetails() {
 
   if (isLoading) {
     return (
-        <Card className="bg-white shadow-lg rounded-lg">
+        <Card className="shadow-lg rounded-lg">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
@@ -43,18 +43,18 @@ export default function ProfileDetails() {
   }
 
   return (
-    <Card className="bg-white shadow-lg rounded-lg">
+    <Card className="shadow-lg rounded-lg">
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle className="text-xl font-semibold text-gray-800">Profile</CardTitle>
-            <CardDescription className="text-gray-600 mt-1">Your personal information.</CardDescription>
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">Profile</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-white/70 mt-1">Your personal information.</CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 text-white hover:bg-blue-700 transition-colors rounded-md px-4 py-2">Edit Profile</Button>
             </DialogTrigger>
-            <DialogContent className="bg-white rounded-lg shadow-xl">
+            <DialogContent className="rounded-lg shadow-xl">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-gray-800">Update Your Profile</DialogTitle>
               </DialogHeader>
@@ -65,16 +65,16 @@ export default function ProfileDetails() {
       </CardHeader>
       <CardContent className="grid gap-6 text-gray-700">
         <div className="flex justify-between items-center border-b pb-4">
-          <h3 className="font-semibold text-gray-900">Full Name</h3>
-          <p className="text-gray-800">{userDetails?.full_name || 'Not set'}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">Full Name</h3>
+          <p className="text-gray-800 dark:text-white">{userDetails?.full_name || 'Not set'}</p>
         </div>
         <div className="flex justify-between items-center border-b pb-4">
-          <h3 className="font-semibold text-gray-900">Email</h3>
-          <p className="text-gray-800">{user?.email}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">Email</h3>
+          <p className="text-gray-800 dark:text-white">{user?.email}</p>
         </div>
         <div className="flex justify-between items-center">
-          <h3 className="font-semibold text-gray-900">Phone</h3>
-          <p className="text-gray-800">{userDetails?.phone || 'Not set'}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">Phone</h3>
+          <p className="text-gray-800 dark:text-white">{userDetails?.phone || 'Not set'}</p>
         </div>
       </CardContent>
     </Card>

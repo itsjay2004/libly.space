@@ -11,6 +11,7 @@ export interface Student {
   library_id: string;
   shifts?: { name: string; start_time: string; end_time: string; fee: number } | null;
   payments?: { amount: number; status: 'paid' | 'due' }[];
+  membership_expiry_date: any
 }
 
 export interface Shift {

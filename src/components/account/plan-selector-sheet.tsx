@@ -1,108 +1,122 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // Import Badge
-import { CheckCircle2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import NProgress from 'nprogress';
+import NProgress from "nprogress";
 
-export function PlanSelectorSheet({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+export default function PlanSelectorSheet({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
-  const handleSelectPro = () => {
-    NProgress.start(); // Start NProgress
+  const handleUpgrade = () => {
+    NProgress.start();
     router.push("/cart");
     setOpen(false);
   };
 
-  const commonFeatures = [
-    "Realtime seat allocation",
-    "Student management",
-    "Individual student profile",
-    "Payment recording",
-    "Advanced due calculation",
-    "Powerful dashboard",
-    "Due reminder",
-  ];
-
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
-      <SheetContent className="sm:max-w-none md:w-1/2 lg:w-1/2"> {/* Adjusted width */}
-        <SheetHeader>
-          <SheetTitle>Upgrade Your Experience</SheetTitle> {/* Updated title */}
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg bg-background border-l flex flex-col"
+      >
+        {/* Header */}
+        <SheetHeader className="p-6 pb-4 border-b">
+          <SheetTitle className="text-2xl font-semibold">Choose Your Plan</SheetTitle>
+          <SheetDescription>
+            Unlock unlimited potential and saves 100s of hours.
+          </SheetDescription>
         </SheetHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-8">
-          <Card className="flex flex-col"> {/* Add flex-col to Card */}
-            <CardHeader>
-              <CardTitle>Free</CardTitle>
-              <CardDescription>Perfect for individuals getting started.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col flex-grow gap-4 justify-between"> {/* Add flex-grow and justify-between */}
-              <div>
-                <p className="text-2xl font-bold text-gray-900">Free</p>
-                <div className="flex items-center gap-2 mt-4">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span>Up to 50 students</span>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex flex-col sm:flex-row gap-6 justify-between">
+            {/* Free Plan */}
+            <Card className="flex-1 border border-muted bg-muted/30 hover:bg-muted/40 transition">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-left">Free Plan</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 text-left">
+                <p className="text-3xl font-bold">
+                  ₹0<span className="text-base font-normal">/mo</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  For small study halls & libraries
+                </p>
+
+                <div className="mt-3 space-y-2">
+                  <Feature text="Up to 50 students" />
+                  <Feature text="Student management" />
+                  <Feature text="Student records" />
+                  <Feature text="Real-time seat management" />
+                  <Feature text="Payment tracking" />
+                  <Feature text="Membership management" />
+                  <Feature text="Invoice generation" />
+                  <Feature text="WhatsApp receipt sharing" />
+                  <Feature text="Multiple shift management" />
+                  <Feature text="Powerful Dashboard" />
+                  <Feature text="Basic reporting" />
+                  <Feature text="Email support" />
                 </div>
-                <div className="space-y-2"> {/* Added space-y-2 for vertical spacing */}
-                  {commonFeatures.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
+
+                <Button variant="outline" className="mt-6 w-full" disabled>
+                  Current Plan
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan */}
+            <Card className="flex-1 border-2 border-primary bg-primary/5 hover:bg-primary/10 transition">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-left">Pro Plan</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 text-left">
+                <p className="text-3xl font-bold">
+                  ₹299<span className="text-base font-normal">/mo</span>
+                </p>
+                <div className="bg-primary/10 text-primary text-sm rounded-lg px-3 py-2 w-fit shadow-md">
+                  ₹250/mo (3-month Plan) — Save 16%
                 </div>
-              </div>
-              <Button variant="outline" disabled className="w-full">
-                Current Plan
-              </Button>
-            </CardContent>
-          </Card>
-          <Card className="border-2 border-blue-500 shadow-lg relative flex flex-col"> {/* Add flex-col to Card */}
-             <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full">Recommended</Badge>
-            <CardHeader>
-              <CardTitle>Pro</CardTitle>
-              <CardDescription>Unlock unlimited potential for your growing needs.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col flex-grow gap-4 justify-between"> {/* Add flex-grow and justify-between */}
-              <div>
-                <p className="text-2xl font-bold text-gray-900">Rs 299<span className="text-base font-normal">/month</span></p>
-                <p className="text-sm text-gray-600">Billed monthly, with savings on 3-month plans.</p>
-                <div className="flex items-center gap-2 mt-4">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span>Unlimited students</span>
+                <p className="border-2 border-primary/20 rounded-md p-2 text-sm font-medium mt-2">Everything in Free, plus:</p>
+
+                <div className="mt-3 space-y-2">
+                  <Feature text="Unlimited students" />
+                  <Feature text="Comprehensive reports & analytics" />
+                  <Feature text="Data export & backup" />
+                  <Feature text="Custom data import" />
+                  <Feature text="Advanced reporting" />
+                  <Feature text="Priority 24/7 support" />
                 </div>
-                <div className="space-y-2"> {/* Added space-y-2 for vertical spacing */}
-                  {commonFeatures.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 mt-2"> {/* Added mt-2 for space between common and priority support */}
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span>Priority Support</span>
-                </div>
-              </div>
-              <Button onClick={handleSelectPro} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
-                Select Pro
-              </Button>
-            </CardContent>
-          </Card>
+
+                <Button onClick={handleUpgrade} className="mt-6 w-full">
+                  Upgrade to Pro
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function Feature({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 text-sm">
+      <Check className="w-4 h-4 mt-[2px] text-primary flex-shrink-0" />
+      <span className="leading-snug">{text}</span>
+    </div>
   );
 }

@@ -57,7 +57,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
     }
 
     return (
-        <div className="h-screen p-2">
+        <div className="min-h-screen h-full w-full">
             <div className="subtle-gradient dark:bg-zinc-900 rounded-2xl h-full flex flex-col">
                 <header className="flex items-center justify-between h-20 px-4 sm:px-8">
                     <div className="flex justify-between border-b w-full py-4">
@@ -77,7 +77,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
                         </div>
                     </div>
                 </header>
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar">
+                <main className="flex-1 px-2 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar">
                     <div className="flex flex-col gap-4 mb-4">
                         {onboardingStatus === 'importing' && <ImportStatusBanner />}
                         <Banners />

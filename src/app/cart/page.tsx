@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser } from "@/hooks/use-user";
@@ -9,8 +9,11 @@ import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
-import Script from 'next/script';
 import { format } from 'date-fns';
+import type { Metadata } from 'next';
+import Footer from "@/components/footer"
+
+
 
 const plans = {
   monthly: {
@@ -38,14 +41,18 @@ declare global {
 }
 
 const ProcessingOverlay = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-white h-12 w-12 mb-4" />
-        <p className="text-white text-lg">Processing payment...</p>
-        <p className="text-white text-sm mt-2">Please do not refresh or close the page.</p>
-    </div>
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-center">
+    <Loader2 className="animate-spin text-white h-12 w-12 mb-4" />
+    <p className="text-white text-lg">Processing payment...</p>
+    <p className="text-white text-sm mt-2">Please do not refresh or close the page.</p>
+  </div>
 );
 
 export default function CartPage() {
+  useEffect(() => {
+    document.title = `Cart - Libly Space`;
+  }, [])
+
   const router = useRouter();
   const { user, userDetails } = useUser();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'threeMonth'>('threeMonth');
@@ -130,10 +137,10 @@ export default function CartPage() {
     };
 
     const rzp1 = new window.Razorpay(options);
-    rzp1.on('payment.failed', function (response:any) {
-        alert(response.error.description);
-        setIsProcessing(false);
-        NProgress.done();
+    rzp1.on('payment.failed', function (response: any) {
+      alert(response.error.description);
+      setIsProcessing(false);
+      NProgress.done();
     });
 
     rzp1.open();
@@ -142,13 +149,13 @@ export default function CartPage() {
   const total = plans[selectedPlan].totalPrice;
 
   return (
-    <>
-    {isProcessing && <ProcessingOverlay />}
-    {/* <Script
+    <div className='min-h-screen flex flex-col justify-between'>
+      {isProcessing && <ProcessingOverlay />}
+      {/* <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
     /> */}
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8">Your cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -180,9 +187,9 @@ export default function CartPage() {
                     onClick={() => setSelectedPlan('threeMonth')}
                     className={cn("relative flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all", selectedPlan === 'threeMonth' ? 'border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600')}
                   >
-                     <div className="absolute top-0 right-4 -mt-3"><div className="inline-block bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">SAVE ₹147</div></div>
+                    <div className="absolute top-0 right-4 -mt-3"><div className="inline-block bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">SAVE ₹147</div></div>
                     <div className="flex items-center">
-                       <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4", selectedPlan === 'threeMonth' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300')}>
+                      <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4", selectedPlan === 'threeMonth' ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300')}>
                         {selectedPlan === 'threeMonth' && <Check className="w-3 h-3 text-white" />}
                       </div>
                       <div>
@@ -207,7 +214,7 @@ export default function CartPage() {
                   <span>Current Expiry</span>
                   <span>{currentExpiry}</span>
                 </div>
-                 <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
+                <div className="flex justify-between items-center text-gray-600 dark:text-gray-300">
                   <span>{plans[selectedPlan].label}</span>
                   <span>₹{plans[selectedPlan].totalPrice.toFixed(2)}</span>
                 </div>
@@ -216,10 +223,10 @@ export default function CartPage() {
                   <span className='text-base'>Plan Valid Until:</span>
                   <span className='text-xs font-medium border border-indigo-600 rounded-sm p-1'>{newExpiry}</span>
                 </div>
-                <Button 
-                    onClick={handlePayment} 
-                    disabled={isProcessing}
-                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 py-3 mt-4 rounded-lg font-semibold"
+                <Button
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                  className="w-full bg-indigo-600 text-white hover:bg-indigo-700 py-3 mt-4 rounded-lg font-semibold"
                 >
                   {isProcessing ? 'Processing...' : `Pay ₹${total.toFixed(2)}`}
                 </Button>
@@ -229,6 +236,10 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-      </>
+
+      <div>
+        <Footer />
+      </div>
+    </div>
   );
 }

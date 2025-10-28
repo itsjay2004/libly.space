@@ -57,6 +57,8 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
   useEffect(() => {
     const handler = setTimeout(() => {
       if (searchTerm.length >= 2) {
@@ -72,7 +74,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
   }, [searchTerm]);
 
   // Query to fetch students based on search term (if studentId is not pre-selected)
-  const { data: searchedStudents = [], isLoading: isLoadingStudents } = useQuery<Student[]>({ // Add type annotation here
+  const { data: searchedStudents = [], isLoading: isLoadingStudents } = useQuery<Student[]>({
     queryKey: ['students', libraryId, debouncedSearchTerm],
     queryFn: async () => {
       if (!debouncedSearchTerm) return [];
@@ -84,28 +86,27 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       if (error) throw error;
       return data || [];
     },
-    enabled: !studentId && debouncedSearchTerm.length >= 2, // Only fetch if studentId is NOT provided and search term is at least 2 chars
-    staleTime: 1000 * 30, // 30 seconds
+    enabled: !studentId && debouncedSearchTerm.length >= 2,
+    staleTime: 1000 * 30,
     gcTime: 1000 * 60 * 5,
   });
 
   // Query to fetch details for a specific student and their shift
-  const { data: selectedStudentDetails, isLoading: isLoadingStudentDetails } = useQuery<Student & { shifts: Shift | null }>({ // Add type annotation here
+  const { data: selectedStudentDetails, isLoading: isLoadingStudentDetails } = useQuery<Student & { shifts: Shift | null }>({
     queryKey: ['studentDetails', watchedStudentId],
     queryFn: async () => {
       const { data, error } = await supabase.from('students').select('*, shifts(*)').eq('id', watchedStudentId).single();
       if (error) throw error;
-      return data as Student & { shifts: Shift | null }; // Cast to combined type
+      return data as Student & { shifts: Shift | null };
     },
-    enabled: !!watchedStudentId, // Only fetch if a student is selected
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!watchedStudentId,
+    staleTime: 1000 * 60 * 5,
   });
 
   const selectedStudent = selectedStudentDetails;
   const studentShift = selectedStudentDetails?.shifts || null;
 
   useEffect(() => {
-    // When a student is pre-selected via prop, set the form value
     if (studentId) {
       form.setValue('studentId', studentId);
     }
@@ -118,10 +119,9 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       const currentExpiry = selectedStudent.membership_expiry_date ? new Date(selectedStudent.membership_expiry_date) : null;
       const sDate = currentExpiry && isFuture(currentExpiry) ? currentExpiry : today;
       form.setValue('startDate', sDate);
-      setSearchTerm(selectedStudent.name); // Set search term to selected student's name
+      setSearchTerm(selectedStudent.name);
     }
-  },[selectedStudent, form.setValue])
-
+  }, [selectedStudent, form.setValue]);
 
   const { expiryDate } = useMemo(() => {
     if (!studentShift?.fee) return { expiryDate: null };
@@ -171,13 +171,11 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       form.reset({ studentId: studentId, amount: undefined, payment_method: "Cash" });
       onPaymentSuccess?.();
 
-      // Invalidate relevant queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['studentCount', libraryId] });
       queryClient.invalidateQueries({ queryKey: ['allPayments', libraryId] });
-      queryClient.invalidateQueries({ queryKey: ['studentDetails', variables.studentId] }); // Invalidate specific student's details
-      queryClient.invalidateQueries({ queryKey: ['students', libraryId] }); // Invalidate all students list
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats', libraryId] }); // Invalidate dashboard stats if they rely on this
-      // Potentially other dashboard related queries like expiringSoonList etc.
+      queryClient.invalidateQueries({ queryKey: ['studentDetails', variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['students', libraryId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats', libraryId] });
     },
     onError: (error: any) => {
       toast({ title: "Error Recording Payment", description: error.message, variant: "destructive", duration: 7000 });
@@ -188,163 +186,236 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     addPaymentMutation.mutate(values);
   };
 
-  // Determine which students to display based on whether a studentId is pre-selected
-  // If studentId is provided, only show that student's details once loaded.
-  // Otherwise, show the results from the debounced search.
   const displayStudents = studentId ? (selectedStudent ? [selectedStudent] : []) : searchedStudents;
   const displayLoadingStudents = studentId ? isLoadingStudentDetails : (isLoadingStudents && debouncedSearchTerm.length >= 2);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Record a Payment</CardTitle>
-        <CardDescription>Enter amount to calculate membership extension.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {!studentId && (
+    <div className=''>
+      <Card className="border border-gray-200 dark:border-gray-800">
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-gray-100">
+            Record a Payment
+          </CardTitle>
+          <CardDescription className="hidden sm:block text-sm sm:text-base">
+            Enter amount to calculate membership extension.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+              {/* Student Selection Field */}
+              {!studentId && (
+                <FormField
+                  control={form.control}
+                  name="studentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">Student</FormLabel>
+                      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between text-left font-normal h-11 sm:h-10",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              <span className="truncate">
+                                {field.value ? displayStudents.find((s) => s.id === field.value)?.name : "Select a student"}
+                              </span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-[var(--radix-popover-trigger-width)] p-0 sm:min-w-[300px]"
+                          align="start"
+                        >
+                          <Command>
+                            <CommandInput
+                              placeholder="Search student..."
+                              value={searchTerm}
+                              onValueChange={setSearchTerm}
+                              className="h-11 sm:h-9"
+                            />
+                            <CommandList>
+                              {displayLoadingStudents ? (
+                                <div className="p-4 text-center">
+                                  <LoadingSpinner />
+                                </div>
+                              ) : (
+                                <>
+                                  <CommandEmpty className="py-6 text-center text-sm">
+                                    {searchTerm.length >= 2 ? 'No student found.' : 'Type at least 2 characters to search.'}
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {displayStudents.map((s) => (
+                                      <CommandItem
+                                        value={s.name}
+                                        key={s.id}
+                                        onSelect={() => {
+                                          form.setValue("studentId", s.id, { shouldValidate: true });
+                                          setSearchTerm(s.name);
+                                          setDebouncedSearchTerm('');
+                                          setPopoverOpen(false);
+                                        }}
+                                        className="py-3 sm:py-2"
+                                      >
+                                        <Check className={cn(
+                                          "mr-2 h-4 w-4 flex-shrink-0",
+                                          s.id === field.value ? "opacity-100" : "opacity-0"
+                                        )} />
+                                        <div className="flex flex-col min-w-0">
+                                          <p className="truncate text-sm font-medium">{s.name}</p>
+                                          <p className="text-xs text-muted-foreground truncate">{s.phone}</p>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Amount Field */}
               <FormField
                 control={form.control}
-                name="studentId"
+                name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl><Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>{field.value ? displayStudents.find((s) => s.id === field.value)?.name : "Select a student"}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search student..."
-                            value={searchTerm}
-                            onValueChange={setSearchTerm}
-                          />
-                          <CommandList>
-                            {displayLoadingStudents ? (
-                              <div className="p-4 text-center"><LoadingSpinner /></div>
-                            ) : (
-                              <>
-                                <CommandEmpty>{searchTerm.length >= 2 ? 'No student found.' : 'Type at least 2 characters to search.'}</CommandEmpty>
-                                <CommandGroup>
-                                  {displayStudents.map((s) => (
-                                    <CommandItem value={s.name} key={s.id} onSelect={() => {
-                                      form.setValue("studentId", s.id, { shouldValidate: true });
-                                      setSearchTerm(s.name); // Set search term to selected student's name
-                                      setDebouncedSearchTerm(''); // Clear debounced search term
-                                    }}>
-                                      <Check className={cn("mr-2 h-4 w-4", s.id === field.value ? "opacity-100" : "opacity-0")} />
-                                      <div>
-                                        <p>{s.name}</p>
-                                        <p className="text-xs text-muted-foreground">{s.phone}</p>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </>
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <FormLabel className="text-sm sm:text-base">Amount Paid</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="e.g., 500"
+                        {...field}
+                        className="h-11 sm:h-10 text-sm sm:text-base"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount Paid</FormLabel>
-                  <FormControl><Input type="number" placeholder="e.g., 500" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Payment Method Field */}
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">Payment Method</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-11 sm:h-10 text-sm sm:text-base">
+                          <SelectValue placeholder="Select a payment method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="UPI" className="text-sm">UPI</SelectItem>
+                        <SelectItem value="Cash" className="text-sm">Cash</SelectItem>
+                        <SelectItem value="Card" className="text-sm">Card</SelectItem>
+                        <SelectItem value="Other" className="text-sm">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="payment_method"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a payment method" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="UPI">UPI</SelectItem>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Card">Card</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Starts On</FormLabel>
-                  <DatePicker value={field.value} onChange={field.onChange} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Start Date Field */}
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="text-sm sm:text-base">Starts On</FormLabel>
+                    <DatePicker value={field.value} onChange={field.onChange} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {selectedStudent && (
-              <Card className="bg-muted/50">
-                <CardHeader className="pb-4"><CardTitle className="text-base">Membership Summary</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {studentShift?.fee && (
+              {/* Membership Summary Card */}
+              {selectedStudent && (
+                <Card className="bg-muted/50 dark:bg-muted/20 border border-gray-200 dark:border-gray-700">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg text-gray-900 dark:text-gray-100">
+                      Membership Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 sm:space-y-4">
+                    {studentShift?.fee && (
+                      <div className="flex justify-between items-center text-sm">
+                        <p className="text-muted-foreground">Shift Fee (Monthly)</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          ₹{Number(studentShift.fee).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-sm">
-                      <p className="text-muted-foreground">Shift Fee (Monthly)</p>
-                      <p className="font-medium">₹{Number(studentShift.fee).toLocaleString()}</p>
+                      <p className="text-muted-foreground">Current Expiry</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                        {selectedStudent.membership_expiry_date ?
+                          format(new Date(selectedStudent.membership_expiry_date), 'PPP') : 'N/A'
+                        }
+                      </p>
                     </div>
-                  )}
-                  <div className="flex justify-between items-center text-sm">
-                    <p className="text-muted-foreground">Current Expiry</p>
-                    <p className="font-medium">{selectedStudent.membership_expiry_date ? format(new Date(selectedStudent.membership_expiry_date), 'PPP') : 'N/A'}</p>
-                  </div>
 
-                  <Separator />
+                    <Separator className="bg-gray-200 dark:bg-gray-700" />
 
-                  <div className="flex justify-between items-center text-sm font-semibold">
-                    <div className='text-center'>
-                      <p className="text-xs text-muted-foreground font-normal">Starts On</p>
-                      {watchedStartDate ? format(watchedStartDate, 'PPP') : '-'}
+                    <div className="flex justify-between items-center text-sm font-semibold">
+                      <div className='text-center flex-1'>
+                        <p className="text-xs text-muted-foreground font-normal mb-1">Starts On</p>
+                        <p className="text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
+                          {watchedStartDate ? format(watchedStartDate, 'PPP') : '-'}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground mx-2 flex-shrink-0" />
+                      <div className='text-center flex-1 text-green-600 dark:text-green-400'>
+                        <p className="text-xs text-muted-foreground font-normal mb-1">New Expiry Date</p>
+                        <p className="text-xs sm:text-sm">
+                          {expiryDate ? format(expiryDate, 'PPP') : '-'}
+                        </p>
+                      </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    <div className='text-center text-green-600'>
-                      <p className="text-xs text-muted-foreground font-normal">New Expiry Date</p>
-                      {expiryDate ? format(expiryDate, 'PPP') : '-'}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            <p className="text-xs text-center text-muted-foreground pt-2 flex items-center justify-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              <span>Payment date: <strong>{format(new Date(), 'PPP')}</strong></span>
-            </p>
+              {/* Payment Date Info */}
+              <p className="text-xs text-center text-muted-foreground pt-2 flex items-center justify-center gap-2 flex-wrap">
+                <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                <span>Payment date: <strong>{format(new Date(), 'PPP')}</strong></span>
+              </p>
 
-            <Button type="submit" className="w-full" disabled={!expiryDate || addPaymentMutation.isPending}>
-              {addPaymentMutation.isPending ? 'Recording...' : 'Record Payment'}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full h-11 sm:h-10 text-sm sm:text-base font-medium"
+                disabled={!expiryDate || addPaymentMutation.isPending}
+              >
+                {addPaymentMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <LoadingSpinner />
+                    Recording...
+                  </span>
+                ) : (
+                  'Record Payment'
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

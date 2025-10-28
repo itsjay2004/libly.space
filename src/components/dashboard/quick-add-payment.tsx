@@ -33,9 +33,11 @@ export default function QuickAddPayment({ libraryId, onPaymentSuccess }: QuickAd
           Record Payment
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-transparent dark:bg-transparent border border-transparent">
         {/* The AddPaymentForm component already has a Card, Title, etc. */}
-        <AddPaymentForm libraryId={libraryId} onPaymentSuccess={handleSuccess} />
+        <div className="">
+          <AddPaymentForm libraryId={libraryId} onPaymentSuccexss={handleSuccess} />
+        </div>
       </DialogContent>
     </Dialog>
   );

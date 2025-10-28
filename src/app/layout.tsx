@@ -1,15 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import '@/styles/nprogress.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import ClientProgressBar from '@/components/ui/client-progress-bar';
-import Footer from '@/components/footer';
-// --- NEW: Import the Providers component ---
 import { Providers } from '@/components/providers';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'libly.space',
@@ -24,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -45,7 +42,6 @@ export default function RootLayout({
                 {children}
               </main>
               <Toaster />
-              <Footer />
             </div>
           </ThemeProvider>
         </Providers>

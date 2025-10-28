@@ -6,6 +6,8 @@ import { ShiftManagement } from '@/components/dashboard/ShiftManagement';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useEffect } from "react"
+
 
 export default function SettingsPage() {
   const {
@@ -25,6 +27,10 @@ export default function SettingsPage() {
     toast
   } = useLibrarySettings();
 
+  useEffect(() => {
+    document.title = `Library - Libly Space`;
+  }, [])
+
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
@@ -36,14 +42,14 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
-                  <div className="grid gap-2 max-w-sm">
-                    <Label htmlFor="library-name"><Skeleton className="h-4 w-24" /></Label>
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                  <div className="grid gap-2 max-w-sm">
-                    <Label htmlFor="total-seats"><Skeleton className="h-4 w-24" /></Label>
-                    <Skeleton className="h-10 w-full" />
-                  </div>
+                <div className="grid gap-2 max-w-sm">
+                  <Label htmlFor="library-name"><Skeleton className="h-4 w-24" /></Label>
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="grid gap-2 max-w-sm">
+                  <Label htmlFor="total-seats"><Skeleton className="h-4 w-24" /></Label>
+                  <Skeleton className="h-10 w-full" />
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { format } from 'date-fns';
 import { Users, TrendingUp, PiggyBank, UserX } from 'lucide-react';
 import { fetchDashboardStatsSERVER, DashboardStats } from '@/lib/supabase/dashboard'; 
-
 import DashboardSkeleton from '@/components/dashboard/dashboard-skeleton';
 import StatsCard from '@/components/dashboard/stats-card';
 import StudentLookup from '@/components/dashboard/student-lookup';
@@ -16,6 +16,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import StudentActions from '@/components/students/student-actions';
 import QuickAddPayment from '@/components/dashboard/quick-add-payment';
+
+export const metadata: Metadata = {
+  title: 'Dashboard - Libly Space',
+  description: 'Library management for modern libraries',
+};
 
 async function DashboardData() {
   const cookieStore = cookies();

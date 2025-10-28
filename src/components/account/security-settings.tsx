@@ -49,14 +49,14 @@ export default function SecuritySettings() {
   };
 
   return (
-    <Card className="bg-white shadow-lg rounded-lg">
+    <Card className="shadow-lg rounded-lg">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold text-gray-800">Security</CardTitle>
-        <CardDescription className="text-gray-600 mt-1">Manage your account security.</CardDescription>
+        <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">Security</CardTitle>
+        <CardDescription className="text-gray-600 dark:text-white mt-1">Manage your account security.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 text-gray-700">
         <div className="flex justify-between items-center border-b pb-4">
-          <h3 className="font-semibold text-gray-900">Password</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white/70">Password</h3>
           <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors rounded-md px-4 py-2">Change Password</Button>
@@ -71,7 +71,7 @@ export default function SecuritySettings() {
         </div>
         <div className="flex justify-between items-center">
             <div>
-                <h3 className="font-semibold text-gray-900">Logout</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white/70">Logout</h3>
                 <p className="text-gray-600 text-sm">You will be returned to the login screen.</p>
             </div>
             <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>

@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +40,6 @@ const formatTime = (timeString: string | null): string => {
 };
 
 export default function StudentProfilePage({ params }: { params: { id: string } }) {
-  const router = useRouter();
   const studentId = params.id;
 
   const { user, libraryId, isUserLoading } = useSharedUser();
@@ -50,6 +48,10 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
   const [loadingStudent, setLoadingStudent] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+      document.title = `Student Profile - Libly Space`;
+    }, [])
 
   const fetchStudentAndLibraryData = useCallback(async () => {
     if (!user || !libraryId) return;
