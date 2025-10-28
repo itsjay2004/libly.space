@@ -10,8 +10,8 @@ import 'nprogress/nprogress.css';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import type { Metadata } from 'next';
 import Footer from "@/components/footer"
+import Script from 'next/script';
 
 
 
@@ -118,7 +118,7 @@ export default function CartPage() {
         if (verificationData.success) {
           router.push(`/cart/thank-you?plan=${selectedPlan}&amount=${planDetails.amount}&txn_id=${verificationData.paymentId}`);
         } else {
-          alert("Payment verification failed. Please contact support.");
+          alert("Payment verification failed. Please contact support@ 9142992036");
         }
         setIsProcessing(false);
         NProgress.done();
@@ -151,10 +151,10 @@ export default function CartPage() {
   return (
     <div className='min-h-screen flex flex-col justify-between'>
       {isProcessing && <ProcessingOverlay />}
-      {/* <Script
+      <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
-    /> */}
+      />
       <div className="flex-1 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8">Your cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,9 +1,13 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useState, useMemo } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { CustomLink } from "@/components/ui/custom-link";
+import { Button } from "@/components/ui/button";
+
+const ITEMS_PER_PAGE = 5;
 
 interface ExpiringStudent {
     id: string;
@@ -16,6 +20,8 @@ interface ExpiringSoonProps {
 }
 
 export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
+    const [currentPage, setCurrentPage] = useState(1);
+
     const getDaysLeftText = (expiryDate: string) => {
         const days = differenceInDays(new Date(expiryDate), new Date());
         if (days < 0) return 'Expired';
@@ -24,19 +30,37 @@ export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
         return `Expires in ${days} days`;
     };
 
+    const paginatedStudents = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return expiringStudents.slice(startIndex, endIndex);
+    }, [expiringStudents, currentPage]);
+
+    const totalPages = Math.ceil(expiringStudents.length / ITEMS_PER_PAGE);
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
     return (
         <Card className="expiring-soon-card rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50 via-white to-pink-100/40 p-4 shadow-sm">
             <CardHeader>
                 <CardTitle>Expiring Soon</CardTitle>
-                <CardDescription>Memberships ending in the next 10 days.</CardDescription>
+                <CardDescription>
+                    {expiringStudents.length} memberships expiring in the next 10 days.
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                {expiringStudents && expiringStudents.length > 0 ? (
+                {paginatedStudents && paginatedStudents.length > 0 ? (
                     <div className="space-y-2">
-                        {expiringStudents.map((student) => (
-                            <CustomLink 
-                                href={`/dashboard/students/${student.id}`} 
-                                key={student.id} 
+                        {paginatedStudents.map((student) => (
+                            <CustomLink
+                                href={`/dashboard/students/${student.id}`}
+                                key={student.id}
                                 className="flex items-center gap-4 p-3 rounded-lg bg-background/50 hover:bg-muted transition-colors border"
                             >
                                 <Avatar className="h-10 w-10">
@@ -58,6 +82,27 @@ export default function ExpiringSoon({ expiringStudents }: ExpiringSoonProps) {
                     </div>
                 )}
             </CardContent>
+            {expiringStudents.length > ITEMS_PER_PAGE && (
+                <CardFooter className="flex justify-between items-center pt-4">
+                    <Button
+                        variant="outline"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 }

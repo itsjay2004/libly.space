@@ -30,7 +30,7 @@ export default function PlanSelectorSheet({ children }: { children: React.ReactN
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg bg-background border-l flex flex-col"
+        className="w-full sm:max-w-xl md:max-w-3xl lg:max-w-4xl bg-background border-l flex flex-col"
       >
         {/* Header */}
         <SheetHeader className="p-6 pb-4 border-b">
@@ -82,24 +82,25 @@ export default function PlanSelectorSheet({ children }: { children: React.ReactN
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-left">Pro Plan</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-3 text-left">
-                <p className="text-3xl font-bold">
-                  ₹299<span className="text-base font-normal">/mo</span>
-                </p>
-                <div className="bg-primary/10 text-primary text-sm rounded-lg px-3 py-2 w-fit shadow-md">
-                  ₹250/mo (3-month Plan) — Save 16%
-                </div>
-                <p className="border-2 border-primary/20 rounded-md p-2 text-sm font-medium mt-2">Everything in Free, plus:</p>
+              <CardContent className="flex flex-col justify-between gap-3 text-left">
+                <div>
+                  <p className="text-3xl font-bold">
+                    ₹299<span className="text-base font-normal">/mo</span>
+                  </p>
+                  <div className="bg-primary/10 text-primary text-sm rounded-lg px-3 py-2 w-fit shadow-md">
+                    ₹250/mo (3-month Plan) — Save 16%
+                  </div>
+                  <p className="border-2 border-primary/20 rounded-md p-2 text-sm font-medium mt-2">Everything in Free, plus:</p>
 
-                <div className="mt-3 space-y-2">
-                  <Feature text="Unlimited students" />
-                  <Feature text="Comprehensive reports & analytics" />
-                  <Feature text="Data export & backup" />
-                  <Feature text="Custom data import" />
-                  <Feature text="Advanced reporting" />
-                  <Feature text="Priority 24/7 support" />
+                  <div className="mt-3 space-y-2">
+                    <Feature text="Unlimited students" />
+                    <Feature text="Comprehensive reports & analytics" />
+                    <Feature text="Data export & backup" />
+                    <Feature text="Custom data import" />
+                    <Feature text="Advanced reporting" />
+                    <Feature text="Priority 24/7 support" />
+                  </div>
                 </div>
-
                 <Button onClick={handleUpgrade} className="mt-6 w-full">
                   Upgrade to Pro
                 </Button>
