@@ -89,7 +89,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  console.log("------------tbale", data)
+  console.log("------------tbale", table)
 
   const handleRowClick = (student: Student) => {
     setLoadingRow(student.id);
@@ -241,6 +241,7 @@ export function DataTable<TData, TValue>({
         ) : data.length > 0 ? (
           data.map((studentData) => {
             const student = studentData as Student;
+            console.log("Rendering UIBadge for student:", student.id, "Expiry:", student.membership_expiry_date, typeof student.membership_expiry_date);
             return (
               <Card
                 key={student.id}
@@ -291,19 +292,22 @@ export function DataTable<TData, TValue>({
                           Expires on {new Date(student.membership_expiry_date).toLocaleDateString()}
                         </div>
                       )}
+
                       <UIBadge
                         variant={
-                          student.membership_expiry_date &&
-                            new Date(student.membership_expiry_date) > new Date()
+                          student.membership_expiry_date 
+                           ? new Date(student.membership_expiry_date) > new Date()
                             ? "default"
                             : "destructive"
+                            : "secondary"
                         }
                         className="text-xs"
                       >
-                        {student.membership_expiry_date &&
-                          new Date(student.membership_expiry_date) > new Date()
+                        {student.membership_expiry_date
+                         ? new Date(student.membership_expiry_date) > new Date()
                           ? "Active"
-                          : "Expired"}
+                          : "Expired"
+                          : "No Payment Record"}
                       </UIBadge>
                     </div>
 

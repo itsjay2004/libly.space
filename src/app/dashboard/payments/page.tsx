@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AddPaymentForm from '@/components/payments/add-payment-form';
@@ -40,33 +40,35 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-1">
+    <div className="flex flex-col gap-8">
+      <div className="w-full max-w-xl mx-auto">
         {/* AddPaymentForm will invalidate queries on success, triggering a refetch here */}
         <AddPaymentForm libraryId={libraryId} />
       </div>
 
-      <RecentPaymentsTable libraryId={libraryId} />
+      <div className="w-full">
+        <RecentPaymentsTable libraryId={libraryId} />
+      </div>
     </div>
   );
 }
 
 const PaymentsPageSkeleton = () => (
-  <div className="grid gap-6 lg:grid-cols-3">
-    <div className="lg:col-span-1">
-      <Skeleton className="h-96 w-full" />
+  <div className="flex flex-col gap-8">
+    <div className="w-full max-w-xl mx-auto">
+      <Skeleton className="h-[400px] w-full" />
     </div>
-    <Card className="lg:col-span-2">
+    <Card className="w-full">
       <CardHeader>
         <Skeleton className="h-6 w-40 mb-2" />
         <Skeleton className="h-4 w-56" />
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       </CardContent>
     </Card>

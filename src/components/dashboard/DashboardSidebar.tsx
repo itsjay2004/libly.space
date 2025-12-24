@@ -3,25 +3,26 @@
 
 import { usePathname } from 'next/navigation';
 import {
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
+    Sidebar,
+    SidebarHeader,
+    SidebarContent,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarFooter,
 } from '@/components/ui/sidebar';
 import Logo from "@/components/logo";
 import { CustomLink } from "@/components/ui/custom-link";
 import { menuItems } from '@/constants/menu-items';
 import { UserMenu } from '@/components/dashboard/UserMenu';
-import Image from 'next/image';
+
 
 export function DashboardSidebar() {
     const pathname = usePathname();
+    
 
     return (
-        <Sidebar variant="inset" collapsible="icon">
+        <Sidebar variant="inset" collapsible="offcanvas">
             <SidebarHeader className="p-4">
                 <div className="flex items-center gap-3">
                     <Logo />
@@ -31,7 +32,9 @@ export function DashboardSidebar() {
                 <SidebarMenu>
                     {menuItems.map((item) => (
                         <SidebarMenuItem key={item.href}>
-                            <CustomLink href={item.href}>
+                            <CustomLink
+                                href={item.href}
+                            >
                                 <SidebarMenuButton
                                     isActive={pathname === item.href}
                                     tooltip={item.label}

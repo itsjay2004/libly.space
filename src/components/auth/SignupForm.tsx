@@ -140,7 +140,7 @@ export default function SignupForm() {
             <Label htmlFor="full-name">Full name</Label>
             <Input
               id="full-name"
-              placeholder="John Doe"
+              placeholder="Aarav Sharma"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
@@ -150,22 +150,28 @@ export default function SignupForm() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              placeholder="+1 234 567 8900"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={isLoading}
-              className="focus-visible:ring-2 focus-visible:ring-indigo-500/60 transition-all"
-            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r pr-2 h-2/3 border-slate-200 dark:border-slate-700">
+                <span className="text-lg">🇮🇳</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">+91</span>
+              </div>
+              <Input
+                id="phone"
+                placeholder="98765 43210"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={isLoading}
+                className="pl-20 focus-visible:ring-2 focus-visible:ring-indigo-500/60 transition-all"
+              />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder="aarav@example.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -178,6 +184,7 @@ export default function SignupForm() {
             <Input
               id="password"
               type="password"
+              placeholder="••••••••"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

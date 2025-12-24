@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Student, Shift } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Check, ChevronsUpDown, CalendarDays, ArrowRight } from 'lucide-react';
+import { Check, ChevronsUpDown, CalendarDays, ArrowRight, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, isFuture } from 'date-fns';
+import { format, isFuture } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '@/components/ui/separator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,10 @@ const paymentFormSchema = z.object({
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   payment_method: z.string({ required_error: 'Please select a payment method.' }),
   startDate: z.date({ required_error: 'Please select a start date.' }),
+  expiryDate: z.date({ required_error: 'Please select an expiry date.' }),
+}).refine((data) => data.expiryDate > data.startDate, {
+  message: "Expiry date must be after start date",
+  path: ["expiryDate"],
 });
 
 interface AddPaymentFormProps {
@@ -47,12 +51,13 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
       amount: undefined,
       payment_method: 'Cash',
       startDate: undefined,
+      expiryDate: undefined,
     },
   });
 
-  const watchedAmount = form.watch('amount');
   const watchedStudentId = form.watch('studentId');
   const watchedStartDate = form.watch('startDate');
+  const watchedExpiryDate = form.watch('expiryDate');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -123,26 +128,8 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     }
   }, [selectedStudent, form.setValue]);
 
-  const { expiryDate } = useMemo(() => {
-    if (!studentShift?.fee) return { expiryDate: null };
-
-    if (watchedAmount && watchedAmount > 0) {
-      const feePerDay = Number(studentShift.fee) / 30;
-      if (feePerDay > 0) {
-        const durationDays = Math.floor(watchedAmount / feePerDay);
-        const newExpiryDate = addDays(watchedStartDate, durationDays);
-        return { expiryDate: newExpiryDate };
-      }
-    }
-    return { expiryDate: null };
-  }, [watchedAmount, watchedStartDate, studentShift]);
-
   const addPaymentMutation = useMutation({
     mutationFn: async (values: z.infer<typeof paymentFormSchema>) => {
-      if (!watchedStartDate || !expiryDate) {
-        throw new Error("Calculation Error: Start or Expiry date could not be calculated.");
-      }
-
       const todayStr = new Date().toISOString().split('T')[0];
 
       const { error: paymentError } = await supabase.from('payments').insert({
@@ -151,14 +138,17 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
         amount: values.amount,
         payment_date: todayStr,
         payment_method: values.payment_method,
-        membership_start_date: watchedStartDate.toISOString().split('T')[0],
-        membership_end_date: expiryDate.toISOString().split('T')[0],
+        membership_start_date: values.startDate.toISOString().split('T')[0],
+        membership_end_date: values.expiryDate.toISOString().split('T')[0],
       });
       if (paymentError) {
         throw paymentError;
       }
 
-      const { error: studentUpdateError } = await supabase.from('students').update({ membership_expiry_date: expiryDate.toISOString().split('T')[0] }).eq('id', values.studentId);
+      const { error: studentUpdateError } = await supabase.from('students').update({ 
+        membership_expiry_date: values.expiryDate.toISOString().split('T')[0] 
+      }).eq('id', values.studentId);
+      
       if (studentUpdateError) {
         throw new Error(`Payment was recorded, but failed to update student's expiry. Please correct manually. Error: ${studentUpdateError.message}`);
       }
@@ -166,9 +156,9 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
     onSuccess: (_, variables) => {
       toast({
         title: 'Payment Recorded Successfully',
-        description: `Membership for ${selectedStudent?.name} is now active until ${format(expiryDate!, "PPP")}.`,
+        description: `Membership for ${selectedStudent?.name} is now active until ${format(variables.expiryDate, "PPP")}.`,
       });
-      form.reset({ studentId: studentId, amount: undefined, payment_method: "Cash" });
+      form.reset({ studentId: studentId, amount: undefined, payment_method: "Cash", startDate: form.getValues('startDate'), expiryDate: undefined });
       onPaymentSuccess?.();
 
       queryClient.invalidateQueries({ queryKey: ['studentCount', libraryId] });
@@ -197,7 +187,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
             Record a Payment
           </CardTitle>
           <CardDescription className="hidden sm:block text-sm sm:text-base">
-            Enter amount to calculate membership extension.
+            Enter payment details and set membership validity.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -331,18 +321,33 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                 )}
               />
 
-              {/* Start Date Field */}
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm sm:text-base">Starts On</FormLabel>
-                    <DatePicker value={field.value} onChange={field.onChange} />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Start Date Field */}
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="text-sm sm:text-base">Starts On</FormLabel>
+                      <DatePicker value={field.value} onChange={field.onChange} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Expiry Date Field */}
+                <FormField
+                  control={form.control}
+                  name="expiryDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="text-sm sm:text-base">Ends On</FormLabel>
+                      <DatePicker value={field.value} onChange={field.onChange} />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Membership Summary Card */}
               {selectedStudent && (
@@ -353,14 +358,6 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 sm:space-y-4">
-                    {studentShift?.fee && (
-                      <div className="flex justify-between items-center text-sm">
-                        <p className="text-muted-foreground">Shift Fee (Monthly)</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          ₹{Number(studentShift.fee).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
                     <div className="flex justify-between items-center text-sm">
                       <p className="text-muted-foreground">Current Expiry</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
@@ -374,7 +371,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
 
                     <div className="flex justify-between items-center text-sm font-semibold">
                       <div className='text-center flex-1'>
-                        <p className="text-xs text-muted-foreground font-normal mb-1">Starts On</p>
+                        <p className="text-xs text-muted-foreground font-normal mb-1">New Start Date</p>
                         <p className="text-gray-900 dark:text-gray-100 text-xs sm:text-sm">
                           {watchedStartDate ? format(watchedStartDate, 'PPP') : '-'}
                         </p>
@@ -383,10 +380,21 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
                       <div className='text-center flex-1 text-green-600 dark:text-green-400'>
                         <p className="text-xs text-muted-foreground font-normal mb-1">New Expiry Date</p>
                         <p className="text-xs sm:text-sm">
-                          {expiryDate ? format(expiryDate, 'PPP') : '-'}
+                          {watchedExpiryDate ? format(watchedExpiryDate, 'PPP') : '-'}
                         </p>
                       </div>
                     </div>
+
+                    {studentShift?.fee && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                         <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-50/50 dark:bg-blue-900/10 p-2 rounded-md">
+                            <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                            <p>
+                              This student is enrolled in <strong>{studentShift.name}</strong> shift.
+                            </p>
+                         </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -401,7 +409,7 @@ export default function AddPaymentForm({ libraryId, studentId, onPaymentSuccess 
               <Button
                 type="submit"
                 className="w-full h-11 sm:h-10 text-sm sm:text-base font-medium"
-                disabled={!expiryDate || addPaymentMutation.isPending}
+                disabled={addPaymentMutation.isPending}
               >
                 {addPaymentMutation.isPending ? (
                   <span className="flex items-center gap-2">

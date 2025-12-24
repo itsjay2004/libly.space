@@ -31,19 +31,37 @@ export const columns: ColumnDef<StudentWithRelations>[] = [
   {
     id: "status",
     header: "Status",
-    accessorFn: (row) => row.membership_expiry_date, // Accessor for sorting/filtering
+    accessorFn: (row) => row.membership_expiry_date,
     cell: ({ row }) => {
       const expiryDate = row.original.membership_expiry_date;
-      const isActive = expiryDate ? isFuture(new Date(expiryDate)) : false;
-      const statusText = isActive ? 'Active' : 'Expired';
-      
+  
+      if (!expiryDate) {
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-gray-100 text-gray-700"
+          >
+            No payment recorded
+          </Badge>
+        );
+      }
+  
+      const isActive = isFuture(new Date(expiryDate));
+  
       return (
-        <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-          {statusText}
+        <Badge
+          variant={isActive ? "default" : "destructive"}
+          className={
+            isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }
+        >
+          {isActive ? "Active" : "Expired"}
         </Badge>
-      )
-    }
-  },
+      );
+    },
+  },  
   {
     accessorKey: "membership_expiry_date",
     header: ({ column }) => {

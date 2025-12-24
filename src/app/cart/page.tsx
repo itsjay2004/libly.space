@@ -12,6 +12,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Footer from "@/components/footer"
 import Script from 'next/script';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 
 
@@ -156,6 +157,7 @@ export default function CartPage() {
         src="https://checkout.razorpay.com/v1/checkout.js"
       />
       <div className="flex-1 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+      <Breadcrumbs className="mb-4" />
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-8">Your cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">

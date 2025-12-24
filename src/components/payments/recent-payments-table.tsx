@@ -24,7 +24,7 @@ interface RecentPaymentsTableProps {
   libraryId: string;
 }
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 export default function RecentPaymentsTable({ libraryId }: RecentPaymentsTableProps) {
   const supabase = createClient();
@@ -176,7 +176,7 @@ export default function RecentPaymentsTable({ libraryId }: RecentPaymentsTablePr
     <Card className="lg:col-span-2">
       <CardHeader>
         <CardTitle>All Payments</CardTitle>
-        <CardDescription>All payments recorded in your library, with pagination.</CardDescription>
+        <CardDescription>All payments recorded for your library.</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Desktop Table */}

@@ -102,6 +102,8 @@ export default function StudentsPage() {
   const students = data?.data || [];
   const pageCount = Math.ceil((data?.count || 0) / pagination.pageSize);
 
+  console.log("---students", students)
+
   if (isUserContextLoading) {
     return <StudentsPageSkeleton />;
   }

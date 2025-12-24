@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormEvent, useState } from 'react';
+import Footer from "@/components/footer"
 import { CustomLink } from '@/components/ui/custom-link';
 
 export default function ForgotPasswordPage() {
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: 'https://app.libly.space/reset-password',
       });
 
       if (authError) {
@@ -40,44 +41,47 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="mx-auto max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Forgot Password</CardTitle>
-          <CardDescription>
-            Enter your email below to receive a password reset link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleResetPassword}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-grow flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Card className="mx-auto w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl">Forgot Password</CardTitle>
+            <CardDescription>
+              Enter your email below to receive a password reset link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleResetPassword}>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Sending reset link...' : 'Reset Password'}
+                </Button>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Sending reset link...' : 'Reset Password'}
-              </Button>
+            </form>
+            {message && <p className="mt-4 text-center text-sm text-green-500">{message}</p>}
+            {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
+            <div className="mt-4 text-center text-sm">
+              Remember your password?{' '}
+              <CustomLink href="/login" className="underline">
+                Login
+              </CustomLink>
             </div>
-          </form>
-          {message && <p className="mt-4 text-center text-sm text-green-500">{message}</p>}
-          {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
-          <div className="mt-4 text-center text-sm">
-            Remember your password?{' '}
-            <CustomLink href="/login" className="underline">
-              Login
-            </CustomLink>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
     </div>
   );
 }

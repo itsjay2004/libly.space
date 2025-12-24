@@ -1,98 +1,138 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
-import type { Shift } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { useUser } from './use-user';
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
+import type { Shift } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { useUser } from "./use-user";
 
-// --- Fetcher Functions ---
-async function fetchLibraryData(supabase: any, userId: string) {
+/* -------------------------------------------------------------------------- */
+/*                                   Fetchers                                  */
+/* -------------------------------------------------------------------------- */
+
+async function fetchLibrary(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from('libraries')
-    .select('id, name, total_seats')
-    .eq('owner_id', userId)
+    .from("libraries")
+    .select("id, name, total_seats")
+    .eq("owner_id", userId)
     .single();
-  if (error && error.code !== 'PGRST116') throw error;
+
+  if (error && error.code !== "PGRST116") throw error;
   return data;
 }
 
-async function fetchShifts(supabase: any, libraryId: string | null) {
-  if (!libraryId) return [];
-  const { data, error } = await supabase.from('shifts').select('*').eq('library_id', libraryId);
+async function fetchShifts(supabase: any, libraryId: string) {
+  const { data, error } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("library_id", libraryId);
+
   if (error) throw error;
-  return data || [];
+  return data ?? [];
 }
 
-// --- Custom Hook ---
+/* -------------------------------------------------------------------------- */
+/*                               Custom Hook                                   */
+/* -------------------------------------------------------------------------- */
+
 export function useLibrarySettings() {
   const supabase = createClient();
-  const { user: currentUser } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useUser();
 
-  const [libraryName, setLibraryName] = useState('');
-  const [totalSeats, setTotalSeats] = useState<number | string>('');
+  const userId = user?.id;
+
+  /* ----------------------------- Editable State ---------------------------- */
+
+  const [libraryName, setLibraryName] = useState("");
+  const [totalSeats, setTotalSeats] = useState<number | "">("");
   const [shifts, setShifts] = useState<Partial<Shift>[]>([]);
-  
-  const userId = currentUser?.id;
 
-  // --- QUERIES ---
-  const { data: libraryData, isLoading: isLibraryLoading } = useQuery({
-    queryKey: ['library', userId],
-    queryFn: () => fetchLibraryData(supabase, userId!),
+  // Guards to prevent overwriting user edits on refetch
+  const libraryInitialized = useRef(false);
+  const shiftsInitialized = useRef(false);
+
+  /* -------------------------------- Queries -------------------------------- */
+
+  const {
+    data: libraryData,
+    isLoading: isLibraryLoading,
+  } = useQuery({
+    queryKey: ["library", userId],
     enabled: !!userId,
+    queryFn: () => fetchLibrary(supabase, userId!),
   });
 
   const libraryId = libraryData?.id;
 
-  const { data: initialShifts = [], isLoading: isShiftsLoading } = useQuery({
-    queryKey: ['shifts', libraryId],
-    queryFn: () => fetchShifts(supabase, libraryId),
+  const {
+    data: shiftsData,
+    isLoading: isShiftsLoading,
+  } = useQuery({
+    queryKey: ["shifts", libraryId],
     enabled: !!libraryId,
+    queryFn: () => fetchShifts(supabase, libraryId!),
   });
 
-  // --- State Synchronization ---
+  /* --------------------------- Sync to Local State -------------------------- */
+  /*      (THIS IS THE CORRECT v5 PATTERN – intentional & safe useEffect)      */
+
   useEffect(() => {
-    if (libraryData) {
-      setLibraryName(libraryData.name || '');
-      setTotalSeats(libraryData.total_seats || '');
-    }
+    if (!libraryData || libraryInitialized.current) return;
+
+    setLibraryName(libraryData.name ?? "");
+    setTotalSeats(libraryData.total_seats ?? "");
+    libraryInitialized.current = true;
   }, [libraryData]);
 
   useEffect(() => {
-    setShifts(initialShifts);
-  }, [initialShifts]);
+    if (!shiftsData || shiftsInitialized.current) return;
 
-  // --- MUTATIONS ---
-  const saveGeneralSettingsMutation = useMutation({
-    mutationFn: async ({ name, seats }: { name: string; seats: number }) => {
+    setShifts(shiftsData);
+    shiftsInitialized.current = true;
+  }, [shiftsData]);
+
+  /* -------------------------------- Mutations ------------------------------- */
+
+  const saveGeneralMutation = useMutation({
+    mutationFn: async () => {
       if (!userId) throw new Error("User not found.");
-      const { data, error } = await supabase.from('libraries').upsert({
-        id: libraryId || undefined,
+
+      const seats = Number(totalSeats);
+      if (!libraryName.trim() || isNaN(seats) || seats <= 0) {
+        throw new Error("Invalid library name or seat count.");
+      }
+
+      const { error } = await supabase.from("libraries").upsert({
+        id: libraryId,
         owner_id: userId,
-        name,
+        name: libraryName.trim(),
         total_seats: seats,
-      }).select().single();
+      });
+
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['library', userId] });
-      toast({ title: "Success", description: "General settings have been saved." });
+      queryClient.invalidateQueries({ queryKey: ["library", userId] });
+      toast({ title: "Success", description: "Library settings saved." });
     },
-    onError: (error) => {
-      toast({ title: "Error", description: `Could not save settings: ${error.message}`, variant: "destructive" });
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   const saveShiftsMutation = useMutation({
-    mutationFn: async (shiftsToSave: Partial<Shift>[]) => {
-      if (!libraryId) throw new Error("Library ID is missing.");
+    mutationFn: async () => {
+      if (!libraryId) throw new Error("Library ID missing.");
 
-      const newShifts = shiftsToSave
-        .filter(s => typeof s.id === 'string' && s.id.startsWith('temp-'))
+      const newShifts = shifts
+        .filter((s) => s.id?.startsWith("temp-"))
         .map(({ name, start_time, end_time, fee }) => ({
           library_id: libraryId,
           name,
@@ -101,8 +141,8 @@ export function useLibrarySettings() {
           fee,
         }));
 
-      const existingShifts = shiftsToSave
-        .filter(s => typeof s.id === 'string' && !s.id.startsWith('temp-'))
+      const existingShifts = shifts
+        .filter((s) => s.id && !s.id.startsWith("temp-"))
         .map(({ id, name, start_time, end_time, fee }) => ({
           id,
           library_id: libraryId,
@@ -112,81 +152,83 @@ export function useLibrarySettings() {
           fee,
         }));
 
-      const operations = [];
-
-      if (newShifts.length > 0) {
-        operations.push(supabase.from('shifts').insert(newShifts));
-      }
-      
-      if (existingShifts.length > 0) {
-        operations.push(supabase.from('shifts').upsert(existingShifts));
+      if (newShifts.length) {
+        const { error } = await supabase.from("shifts").insert(newShifts);
+        if (error) throw error;
       }
 
-      const results = await Promise.all(operations);
-      const firstError = results.find(res => res.error);
-      if (firstError) throw firstError.error;
+      if (existingShifts.length) {
+        const { error } = await supabase.from("shifts").upsert(existingShifts);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shifts', libraryId] });
-      toast({ title: "Success", description: "Shift information has been updated." });
+      queryClient.invalidateQueries({ queryKey: ["shifts", libraryId] });
+      shiftsInitialized.current = false; // allow resync
+      toast({ title: "Success", description: "Shifts saved successfully." });
     },
-    onError: (error) => {
-      toast({ title: "Error saving shifts", description: error.message, variant: 'destructive' });
-    }
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteShiftMutation = useMutation({
-      mutationFn: async (shiftId: string) => {
-          const { data, error: fetchError } = await supabase.from('students').select('id').eq('shift_id', shiftId).limit(1);
-          if(fetchError) throw new Error(`Could not verify shift status: ${fetchError.message}`);
-          if (data && data.length > 0) {
-            throw new Error("This shift cannot be deleted because it is currently assigned to one or more students.");
-          }
-          const { error } = await supabase.from('shifts').delete().match({ id: shiftId });
-          if (error) throw error;
-      },
-      onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['shifts', libraryId] });
-          toast({ title: "Shift Deleted", description: "The shift has been successfully removed." });
-      },
-      onError: (error) => {
-          toast({ title: "Error", description: `Could not delete shift: ${error.message}`, variant: "destructive" });
+    mutationFn: async (shiftId: string) => {
+      const { data } = await supabase
+        .from("students")
+        .select("id")
+        .eq("shift_id", shiftId)
+        .limit(1);
+
+      if (data?.length) {
+        throw new Error("Shift is assigned to students.");
       }
+
+      const { error } = await supabase
+        .from("shifts")
+        .delete()
+        .eq("id", shiftId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts", libraryId] });
+      shiftsInitialized.current = false;
+      toast({ title: "Shift deleted" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  // --- Event Handlers ---
-  const handleSaveGeneral = () => {
-    const seats = Number(totalSeats);
-    if (!libraryName.trim() || isNaN(seats) || seats <= 0) {
-      toast({ title: "Invalid Input", description: "Please provide a valid library name and a positive number for seats.", variant: "destructive" });
-      return;
-    }
-    saveGeneralSettingsMutation.mutate({ name: libraryName, seats });
-  };
-  
-  const handleSaveShifts = () => {
-    saveShiftsMutation.mutate(shifts);
-  };
+  /* --------------------------------- API ---------------------------------- */
 
-  const handleRemoveShift = (shiftId: string) => {
-    deleteShiftMutation.mutate(shiftId);
-  };
-  
   return {
     loading: isLibraryLoading || isShiftsLoading,
+
+    libraryId,
     libraryName,
     setLibraryName,
     totalSeats,
     setTotalSeats,
-    isSavingGeneral: saveGeneralSettingsMutation.isPending,
-    handleSaveGeneral,
+
     shifts,
     setShifts,
-    libraryId,
+
+    saveGeneral: () => saveGeneralMutation.mutate(),
+    saveShifts: () => saveShiftsMutation.mutate(),
+    deleteShift: (id: string) => deleteShiftMutation.mutate(id),
+
+    isSavingGeneral: saveGeneralMutation.isPending,
     isSavingShifts: saveShiftsMutation.isPending,
-    handleSaveShifts,
-    handleRemoveShift,
     isDeletingShift: deleteShiftMutation.isPending,
-    toast
   };
 }
