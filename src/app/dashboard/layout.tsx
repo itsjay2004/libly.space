@@ -4,9 +4,9 @@ import { ReactNode } from "react";
 import { SidebarInset } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
-import { SidebarProvider } from "@/contexts/SidebarContext";
 // --- NEW: Import the UserProvider ---
 import { UserProvider } from "@/contexts/UserContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (

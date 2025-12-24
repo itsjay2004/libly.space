@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import ClientProgressBar from '@/components/ui/client-progress-bar';
 import { Providers } from '@/components/providers';
+import { SidebarProvider } from '@/contexts/SidebarContext';
 
 
 export const metadata: Metadata = {
