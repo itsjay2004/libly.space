@@ -1,9 +1,9 @@
 'use client';
 
 import NextLink, { LinkProps } from 'next/link';
-import { ReactNode } from 'react';
+import { ReactNode, useContext } from 'react'; // Import useContext
 import NProgress from 'nprogress';
-import { useSidebar } from '@/hooks/use-sidebar';
+import { SidebarContext } from '@/contexts/SidebarContext'; // Import the context directly
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CustomLinkProps extends LinkProps {
@@ -12,14 +12,13 @@ interface CustomLinkProps extends LinkProps {
 }
 
 export function CustomLink({ children, className, ...props }: CustomLinkProps) {
-  const { setOpenMobile } = useSidebar()
-  const isMobile = useIsMobile()
+  const sidebarContext = useContext(SidebarContext); // Safely get the context
+  const isMobile = useIsMobile();
   
   const handleClick = () => {
-
-    if (isMobile) {
-      console.log("------------ iam in mobile mode")
-      setOpenMobile(false);
+    // Only try to close the sidebar if we are inside the provider
+    if (isMobile && sidebarContext) {
+      sidebarContext.setOpenMobile(false);
     }
 
     NProgress.start();

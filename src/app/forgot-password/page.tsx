@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
 
     try {
       const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://app.libly.space/reset-password',
+        redirectTo: process.env.NEXT_PUBLIC_RESET_REDIRECT,
       });
 
       if (authError) {
